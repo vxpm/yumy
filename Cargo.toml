@@ -1,0 +1,19 @@
+[package]
+name = "yumy"
+description = "a straightforward diagnostics rendering crate."
+version = "0.1.0"
+edition = "2021"
+authors = ["vxpm"]
+license-file = "LICENSE.txt"
+readme = "README.md"
+keywords = ["error", "diagnostics", "report", "formatting", "lang-dev"]
+categories = ["command-line-interface"]
+repository = "https://github.com/vxpm/yumy"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+either = "1.8"
+nonmax = "0.5"
+owo-colors = "3.5"
+unicode-width = "0.1"
