@@ -96,6 +96,7 @@ impl Footnote {
 }
 
 /// A diagnostic.
+#[derive(Debug, Clone)]
 pub struct Diagnostic<Src> {
     message: String,
     labels: Vec<Label>,
@@ -141,6 +142,13 @@ impl<Src> Diagnostic<Src> {
     #[inline(always)]
     pub fn with_label(mut self, label: Label) -> Self {
         self.add_label(label);
+        self
+    }
+
+    /// Replaces the [`Label`]s of this diagnostic.
+    #[inline(always)]
+    pub fn with_labels(mut self, labels: Vec<Label>) -> Self {
+        self.labels = labels;
         self
     }
 
