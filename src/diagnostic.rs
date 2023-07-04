@@ -146,15 +146,21 @@ impl<Src> Diagnostic<Src> {
     /// Add a footnote to this diagnostic. A footnote is a message
     /// shown after the body of a diagnostic.
     #[inline(always)]
-    pub fn add_footnote(&mut self, footnote: String) {
-        self.footnotes.push(footnote);
+    pub fn add_footnote<F>(&mut self, footnote: F)
+    where
+        F: ToString,
+    {
+        self.footnotes.push(footnote.to_string());
     }
 
     /// Add a footnote to this diagnostic. A footnote is a message
     /// shown after the body of a diagnostic.
     #[inline(always)]
-    pub fn with_footnote(mut self, footnote: String) -> Self {
-        self.add_footnote(footnote);
+    pub fn with_footnote<F>(mut self, footnote: F) -> Self
+    where
+        F: ToString,
+    {
+        self.add_footnote(footnote.to_string());
         self
     }
 }
