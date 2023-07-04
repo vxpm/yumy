@@ -76,31 +76,12 @@ impl Label {
     }
 }
 
-/// A footnote is a message shown after a [`Diagnostic`].
-#[derive(Debug, Clone)]
-pub struct Footnote {
-    /// The message of this footnote.
-    pub message: String,
-}
-
-impl Footnote {
-    /// Creates a new footnote.
-    pub fn new<S>(message: S) -> Self
-    where
-        S: ToString,
-    {
-        Self {
-            message: message.to_string(),
-        }
-    }
-}
-
 /// A diagnostic.
 #[derive(Debug, Clone)]
 pub struct Diagnostic<Src> {
     message: String,
     labels: Vec<Label>,
-    footnotes: Vec<Footnote>,
+    footnotes: Vec<String>,
     source: Src,
 }
 
@@ -134,6 +115,16 @@ impl Diagnostic<NoSource> {
 impl<Src> Diagnostic<Src> {
     /// Add a [`Label`] to this diagnostic.
     #[inline(always)]
+    pub fn with_message<M>(mut self, message: M) -> Self
+    where
+        M: ToString,
+    {
+        self.message = message.to_string();
+        self
+    }
+
+    /// Add a [`Label`] to this diagnostic.
+    #[inline(always)]
     pub fn add_label(&mut self, label: Label) {
         self.labels.push(label);
     }
@@ -152,15 +143,17 @@ impl<Src> Diagnostic<Src> {
         self
     }
 
-    /// Add a [`Footnote`] to this diagnostic.
+    /// Add a footnote to this diagnostic. A footnote is a message
+    /// shown after the body of a diagnostic.
     #[inline(always)]
-    pub fn add_footnote(&mut self, footnote: Footnote) {
+    pub fn add_footnote(&mut self, footnote: String) {
         self.footnotes.push(footnote);
     }
 
-    /// Add a [`Footnote`] to this diagnostic.
+    /// Add a footnote to this diagnostic. A footnote is a message
+    /// shown after the body of a diagnostic.
     #[inline(always)]
-    pub fn with_footnote(mut self, footnote: Footnote) -> Self {
+    pub fn with_footnote(mut self, footnote: String) -> Self {
         self.add_footnote(footnote);
         self
     }
@@ -284,7 +277,7 @@ impl<'src> Diagnostic<Source<'src>> {
     {
         let left_padding = self.left_padding();
 
-        for extra in &self.footnotes {
+        for footnote in &self.footnotes {
             write!(
                 writer,
                 "{:padding$} {} ",
@@ -292,7 +285,7 @@ impl<'src> Diagnostic<Source<'src>> {
                 '>'.style(config.styles.footnote_indicator),
                 padding = left_padding
             )?;
-            writeln!(writer, "{}", extra.message)?;
+            writeln!(writer, "{}", footnote)?;
         }
 
         Ok(())
@@ -302,9 +295,9 @@ impl<'src> Diagnostic<Source<'src>> {
     where
         W: Write,
     {
-        for extra in &self.footnotes {
+        for footnote in &self.footnotes {
             write!(writer, "{} ", '>'.style(config.styles.footnote_indicator))?;
-            writeln!(writer, "{}", extra.message)?;
+            writeln!(writer, "{}", footnote)?;
         }
 
         Ok(())

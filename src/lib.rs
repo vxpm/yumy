@@ -8,7 +8,6 @@ pub mod source;
 pub use owo_colors;
 
 pub use diagnostic::Diagnostic;
-pub use diagnostic::Footnote;
 pub use diagnostic::Label;
 
 pub use diagnostic::config::Charset;
