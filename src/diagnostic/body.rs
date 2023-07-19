@@ -7,8 +7,24 @@ use either::Either;
 use owo_colors::{OwoColorize, Style};
 use std::{io::Write, ops::Range};
 
-fn ident_width(text: &str) -> usize {
-    text.chars().take_while(|x| x.is_whitespace()).count()
+struct IdentInfo {
+    end: usize,
+    width: usize,
+}
+
+fn ident_info(text: &str) -> IdentInfo {
+    text.char_indices()
+        .map(|x| match x.1 {
+            ' ' => Some((x.0, 1)),
+            '\t' => Some((x.0, 4)),
+            _ => None,
+        })
+        .take_while(|x| x.is_some())
+        .map(|x| x.unwrap())
+        .fold(IdentInfo { end: 0, width: 0 }, |acc, x| IdentInfo {
+            end: x.0,
+            width: acc.width + x.1,
+        })
 }
 
 #[derive(Debug, Clone)]
@@ -145,7 +161,7 @@ where
 
         let ident_width = singleline_lines
             .chain(multiline_lines)
-            .map(|line| ident_width(line.line))
+            .map(|line| ident_info(line.line).width)
             .min()
             .unwrap_or(0);
 
@@ -314,13 +330,16 @@ where
         self.emit_left_column(line_index as usize)?;
         self.emit_multiline_indicators()?;
 
-        let deident_start = self.ident_width.min(line.line.len());
+        let line_ident_info = ident_info(line.line);
+        let spaces = line_ident_info.width - self.ident_width;
+
         let style = self.source.style().unwrap_or(self.config.styles.source);
 
+        write!(self.writer, "{:x$}", "", x = spaces)?;
         writeln!(
             self.writer,
             "{}",
-            (&line.line[deident_start..]).style(style)
+            (&line.line[line_ident_info.end..]).style(style),
         )?;
         Ok(())
     }
@@ -334,8 +353,8 @@ where
         self.emit_left_column(None)?;
         self.emit_multiline_indicators()?;
 
-        let line_width = unicode_width::UnicodeWidthStr::width(line.line) - self.ident_width;
-        let deident_start = self.ident_width.min(line.line.len());
+        let line_width = unicode_width::UnicodeWidthStr::width(line.line);
+        let deident_start = 0;
 
         let before_underliner_width = unicode_width::UnicodeWidthStr::width(
             &line.line[deident_start..label.line_span.start() as usize],
@@ -379,7 +398,7 @@ where
         label_slot: u32,
     ) -> std::io::Result<()> {
         self.emit_left_column(None)?;
-        let line_width = unicode_width::UnicodeWidthStr::width(line.line) - self.ident_width;
+        let line_width = unicode_width::UnicodeWidthStr::width(line.line);
         let this_style = label.indicator_style;
 
         for slot in &self.multiline_slots[..label_slot as usize] {
