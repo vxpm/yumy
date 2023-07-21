@@ -15,7 +15,7 @@ here's the same diagnostic in compact mode:
 
 and here's the code for this diagnostic:
 
-```rust
+```rust, ignore
 let diagnostic = Diagnostic::new(format!("{}: you did something wrong", "error".red()))
     .with_source(Source::new(&src, None))
     .with_label(Label::styled(

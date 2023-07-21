@@ -7,24 +7,29 @@ use either::Either;
 use owo_colors::{OwoColorize, Style};
 use std::{io::Write, ops::Range};
 
+#[derive(Debug, Clone, Copy)]
 struct IdentInfo {
     end: usize,
-    width: usize,
+    len: usize,
 }
 
 fn ident_info(text: &str) -> IdentInfo {
-    text.char_indices()
-        .map(|x| match x.1 {
-            ' ' => Some((x.0, 1)),
-            '\t' => Some((x.0, 4)),
-            _ => None,
-        })
-        .take_while(|x| x.is_some())
-        .map(|x| x.unwrap())
-        .fold(IdentInfo { end: 0, width: 0 }, |acc, x| IdentInfo {
-            end: x.0,
-            width: acc.width + x.1,
-        })
+    let mut len = 0;
+    let mut c_indices = text.char_indices();
+
+    let end = loop {
+        let Some((start, c)) = c_indices.next() else {
+            break text.len();
+        };
+
+        len += match c {
+            ' ' => 1,
+            '\t' => 4,
+            _ => break start,
+        }
+    };
+
+    IdentInfo { end, len }
 }
 
 #[derive(Debug, Clone)]
@@ -75,7 +80,7 @@ pub(crate) struct BodyWriter<'src, W> {
     source: Source<'src>,
     config: Config,
     left_padding: usize,
-    ident_width: usize,
+    ident_len: usize,
     singleline_labels: Vec<SinglelineLabel>,
     multiline_labels: Vec<MultilineLabel>,
     multiline_slots: Vec<Slot>,
@@ -161,7 +166,7 @@ where
 
         let ident_width = singleline_lines
             .chain(multiline_lines)
-            .map(|line| ident_info(line.line).width)
+            .map(|line| ident_info(line.line).len)
             .min()
             .unwrap_or(0);
 
@@ -170,7 +175,7 @@ where
             source,
             config: config.clone(),
             left_padding,
-            ident_width,
+            ident_len: ident_width,
             singleline_labels,
             multiline_slots: vec![Slot::Inactive; Self::slots_needed(&multiline_labels)],
             multiline_labels,
@@ -331,11 +336,11 @@ where
         self.emit_multiline_indicators()?;
 
         let line_ident_info = ident_info(line.line);
-        let spaces = line_ident_info.width - self.ident_width;
+        let spaces = line_ident_info.len - self.ident_len;
 
         let style = self.source.style().unwrap_or(self.config.styles.source);
 
-        write!(self.writer, "{:x$}", "", x = spaces)?;
+        write!(self.writer, "{:x$} ", "", x = spaces)?;
         writeln!(
             self.writer,
             "{}",
@@ -353,12 +358,13 @@ where
         self.emit_left_column(None)?;
         self.emit_multiline_indicators()?;
 
-        let line_width = unicode_width::UnicodeWidthStr::width(line.line);
-        let deident_start = 0;
+        let line_ident_info = ident_info(line.line);
+        let spaces = line_ident_info.len - self.ident_len;
 
-        let before_underliner_width = unicode_width::UnicodeWidthStr::width(
-            &line.line[deident_start..label.line_span.start() as usize],
-        );
+        let line_width = unicode_width::UnicodeWidthStr::width(line.line);
+
+        let before_underliner_width = spaces
+            + unicode_width::UnicodeWidthStr::width(&line.line[..label.line_span.start() as usize]);
         let after_underliner_width =
             unicode_width::UnicodeWidthStr::width(&line.line[label.line_span.end() as usize..]);
         let underliner_width = line_width - (before_underliner_width + after_underliner_width);
@@ -372,6 +378,7 @@ where
             .indicator_style
             .unwrap_or(self.config.styles.singleline_indicator);
 
+        write!(self.writer, "{:x$}", "", x = spaces)?;
         for c in underliner {
             write!(self.writer, "{}", c.style(style))?;
         }
