@@ -19,7 +19,7 @@ impl SourceSpan {
     pub fn new(start: u32, end: u32) -> Self {
         assert!(end >= start);
         Self {
-            start: NonMaxU32::new(start).unwrap(),
+            start: NonMaxU32::new(start).expect("Start is non-max"),
             end,
         }
     }
@@ -49,8 +49,8 @@ impl SourceSpan {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
-pub(crate) struct SourceLine<'src> {
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct SourceLine<'src> {
     pub span: SourceSpan,
     pub line: &'src str,
 }
@@ -71,18 +71,22 @@ pub struct Source<'src> {
 }
 
 impl<'src> Source<'src> {
-    fn lines(src: &str) -> Vec<SourceLine> {
-        let line_starts = std::iter::once(0).chain(src.match_indices('\n').map(|(i, _)| i + 1));
-        let line_spans =
-            line_starts
-                .zip(src.lines().map(|x| (x, x.len())))
-                .map(|(start, (line, len))| {
-                    (line, SourceSpan::new(start as u32, (start + len) as u32))
-                });
+    fn lines_of(src: &str) -> Vec<SourceLine> {
+        let base_addr = src.as_ptr();
+        let lines = src.lines().map(|line| {
+            let line_addr = line.as_ptr();
+            let offset = (line_addr as usize)
+                .checked_sub(base_addr as usize)
+                .expect("line should always have higher address");
+            let end = offset + line.len();
 
-        line_spans
-            .map(|(line, span)| SourceLine::new(line, span))
-            .collect()
+            SourceLine {
+                span: SourceSpan::new(offset as u32, end as u32),
+                line,
+            }
+        });
+
+        lines.collect()
     }
 
     /// Creates a new source.
@@ -91,7 +95,7 @@ impl<'src> Source<'src> {
             src,
             name,
             style: None,
-            lines: Self::lines(src),
+            lines: Self::lines_of(src),
         }
     }
 
@@ -101,7 +105,7 @@ impl<'src> Source<'src> {
             src,
             name,
             style: Some(style),
-            lines: Self::lines(src),
+            lines: Self::lines_of(src),
         }
     }
 
@@ -117,8 +121,12 @@ impl<'src> Source<'src> {
         self.style
     }
 
-    pub(crate) fn line(&self, index: u32) -> Option<SourceLine<'src>> {
+    pub fn line(&self, index: u32) -> Option<SourceLine<'src>> {
         self.lines.get(index as usize).copied()
+    }
+
+    pub fn lines(&self) -> impl Iterator<Item = &SourceLine> {
+        self.lines.iter()
     }
 
     pub(crate) fn line_index_of_byte(&self, byte_index: u32) -> Option<u32> {
@@ -131,8 +139,65 @@ impl<'src> Source<'src> {
             if line.span.contains(byte_index) {
                 return Some(index as u32);
             }
+
+            if line.span.start() > byte_index {
+                return Some((index - 1) as u32);
+            }
         }
 
         None
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    const SAMPLE: &str = include_str!("../sample.txt");
+
+    #[test]
+    fn test_lines() {
+        let src = Source::new(SAMPLE, None);
+        let mut lines = src.lines();
+
+        assert_eq!(
+            Some(&SourceLine {
+                span: SourceSpan::new(0, 20),
+                line: "hello there darling!"
+            }),
+            lines.next()
+        );
+
+        // notice how index 20 is not included in any line
+        // since it is the \n character!
+
+        assert_eq!(
+            Some(&SourceLine {
+                span: SourceSpan::new(21, 28),
+                line: "this is"
+            }),
+            lines.next()
+        );
+
+        // the same goes for 28
+
+        assert_eq!(
+            Some(&SourceLine {
+                span: SourceSpan::new(29, 29),
+                line: ""
+            }),
+            lines.next()
+        );
+
+        // index 29 is the \n! but it is also not included since
+        // the line is empty (29..29)
+
+        assert_eq!(
+            Some(&SourceLine {
+                span: SourceSpan::new(30, 46),
+                line: "a sample text :)"
+            }),
+            lines.next()
+        );
     }
 }
