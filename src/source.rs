@@ -1,3 +1,5 @@
+use std::ops::Range;
+
 use nonmax::NonMaxU32;
 use owo_colors::Style;
 
@@ -46,6 +48,15 @@ impl SourceSpan {
     #[inline]
     pub fn contains(&self, value: u32) -> bool {
         (self.start() <= value) && (value < self.end)
+    }
+}
+
+impl<T> From<Range<T>> for SourceSpan
+where
+    T: Into<u32>,
+{
+    fn from(value: Range<T>) -> Self {
+        Self::new(value.start.into(), value.end.into())
     }
 }
 
@@ -153,7 +164,7 @@ impl<'src> Source<'src> {
 mod test {
     use super::*;
 
-    const SAMPLE: &str = include_str!("../sample.txt");
+    const SAMPLE: &str = include_str!("../samples/sample1.txt");
 
     #[test]
     fn test_lines() {

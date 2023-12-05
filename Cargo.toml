@@ -13,7 +13,12 @@ repository = "https://github.com/vxpm/yumy"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+ansi-str = "0.8.0"
+anstyle-roff = "0.3.2"
 either = "1.8"
 nonmax = "0.5"
 owo-colors = "3.5"
 unicode-width = "0.1"
+
+[dev-dependencies]
+insta = { version = "1.34.0", features = ["yaml"] }

@@ -489,9 +489,9 @@ where
         let mut multiline_slot = 0;
         while multiline_slot < self.multiline_slots.len() {
             let Slot::Active(label) = &self.multiline_slots[multiline_slot] else {
-                    multiline_slot += 1;
-                    continue;
-                };
+                multiline_slot += 1;
+                continue;
+            };
 
             if label.line_range.end == self.current_line + 1 {
                 let label =

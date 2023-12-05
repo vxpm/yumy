@@ -1,0 +1,14 @@
+---
+source: src/diagnostic.rs
+assertion_line: 373
+expression: clear
+---
+error[E0072]: recursive type `List` has infinite size
+  @ [src/lib.rs]
+4 │  pub enum List {
+  : ^^^^^^^^^^^^^ 
+5 │      Cons(i32, List),
+  :                        recursive without indirection
+  > error: could not compile `playground` (lib) due to previous error
+
+

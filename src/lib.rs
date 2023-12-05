@@ -5,6 +5,9 @@ pub mod diagnostic;
 /// Module for source related items.
 pub mod source;
 
+#[cfg(test)]
+pub(crate) mod test;
+
 pub use owo_colors;
 
 pub use diagnostic::Diagnostic;
