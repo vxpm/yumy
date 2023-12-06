@@ -356,9 +356,8 @@ impl<'src> Diagnostic<Source<'src>> {
 
 #[cfg(test)]
 mod test {
-    use crate::test::diagnostic_snapshot;
-
     use super::*;
+    use crate::test::diagnostic_snapshot;
 
     #[test]
     fn test_singleline() {
@@ -370,7 +369,6 @@ mod test {
             .with_footnote("error: could not compile `playground` (lib) due to previous error")
             .with_source(src);
 
-        insta::assert_debug_snapshot!(diagnostic);
         diagnostic_snapshot!(diagnostic);
     }
 }

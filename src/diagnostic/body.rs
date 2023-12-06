@@ -94,21 +94,39 @@ where
     /// Calculates the number of slots needed for a set
     /// of multiline labels.
     fn slots_needed(labels: &[MultilineLabel]) -> usize {
+        enum Event {
+            Start(u32),
+            End(u32),
+        }
+
+        impl Event {
+            fn index(&self) -> u32 {
+                match self {
+                    Event::Start(x) => *x,
+                    Event::End(x) => *x,
+                }
+            }
+        }
+
         let mut events: Vec<_> = labels
             .iter()
-            .flat_map(|x| [(true, x.line_range.start), (false, x.line_range.end)])
+            .flat_map(|x| {
+                [
+                    Event::Start(x.line_range.start),
+                    Event::End(x.line_range.end),
+                ]
+            })
             .collect();
 
-        events.sort_unstable_by(|a, b| a.1.cmp(&b.1));
+        events.sort_unstable_by(|a, b| a.index().cmp(&b.index()));
 
         let mut current = 0;
         let mut max = 0;
 
-        for (start, _) in events {
-            if start {
-                current += 1;
-            } else {
-                current -= 1;
+        for event in events {
+            match event {
+                Event::Start(_) => current += 1,
+                Event::End(_) => current -= 1,
             }
 
             if current > max {

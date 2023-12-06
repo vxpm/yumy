@@ -1,6 +1,7 @@
 ---
 source: src/diagnostic.rs
-expression: blocks
+assertion_line: 373
+expression: ansi
 ---
 [
     AnsiBlock {

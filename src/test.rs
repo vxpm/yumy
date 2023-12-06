@@ -1,12 +1,29 @@
-use std::path::PathBuf;
+use std::{
+    path::{Path, PathBuf},
+    sync::OnceLock,
+};
 
-pub fn snapshots_path() -> PathBuf {
-    let mut p = std::env::current_dir().unwrap();
-    p.push("snapshots");
-
-    p
+#[inline(always)]
+pub(crate) fn type_name_of_val<T>(_: T) -> &'static str {
+    std::any::type_name::<T>()
 }
 
+#[inline(always)]
+pub(crate) fn snapshots_path() -> &'static Path {
+    static PATH: OnceLock<PathBuf> = OnceLock::new();
+
+    PATH.get_or_init(|| {
+        let mut p = std::env::current_dir().unwrap();
+        p.push("snapshots");
+        p
+    })
+    .as_path()
+}
+
+/// Asserts a snapshot of the diagnostic.
+///
+/// A diagnostic has 2 snapshots, `ansi` and `clean`. `ansi` has ANSI information while
+/// `clean` is pure text.
 macro_rules! diagnostic_snapshot {
     ($diagnostic:expr) => {{
         let mut buffer = Vec::new();
@@ -18,28 +35,18 @@ macro_rules! diagnostic_snapshot {
         let string = String::from_utf8(buffer).unwrap();
 
         // extract styles and clear it up
-        let (clear, blocks): (Vec<_>, Vec<_>) = ansi_str::get_blocks(&string)
+        let (clean, ansi): (Vec<_>, Vec<_>) = ansi_str::get_blocks(&string)
             .map(|block| (block.text().to_string(), block))
             .unzip();
-        let clear = clear.join("");
+        let clean = clean.join("");
 
+        // setup settings
         let mut settings = ::insta::Settings::clone_current();
         settings.set_snapshot_path(crate::test::snapshots_path());
         let _guard = settings.bind_to_scope();
 
-        fn f() {}
-
-        fn type_name_of_val<T>(_: T) -> &'static str {
-            std::any::type_name::<T>()
-        }
-
-        let mut name = type_name_of_val(f).strip_suffix("::f").unwrap_or("");
-        while let Some(rest) = name.strip_suffix("::{{closure}}") {
-            name = rest;
-        }
-
-        ::insta::assert_snapshot!(format!("{name}-clear"), clear);
-        ::insta::assert_debug_snapshot!(format!("{name}-blocks"), blocks);
+        ::insta::assert_snapshot!(clean);
+        ::insta::assert_debug_snapshot!(ansi);
     }};
 }
 

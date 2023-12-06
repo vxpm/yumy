@@ -1,7 +1,7 @@
 ---
 source: src/diagnostic.rs
 assertion_line: 373
-expression: clear
+expression: clean
 ---
 error[E0072]: recursive type `List` has infinite size
   @ [src/lib.rs]
