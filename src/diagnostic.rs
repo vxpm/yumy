@@ -353,10 +353,11 @@ mod test {
     use super::*;
     use crate::test::diagnostic_snapshot;
 
+    const RUST_SAMPLE: &str = include_str!("../samples/sample2.rs");
+
     #[test]
     fn test_singleline() {
-        const SAMPLE: &str = include_str!("../samples/sample2.rs");
-        let src = Source::new(SAMPLE, Some("src/lib.rs"));
+        let src = Source::new(RUST_SAMPLE, Some("src/lib.rs"));
         let diagnostic = Diagnostic::new("error[E0072]: recursive type `List` has infinite size")
             .with_label(Label::new(53..66u32, ""))
             .with_label(Label::new(83..87u32, "recursive without indirection"))
