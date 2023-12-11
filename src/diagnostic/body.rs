@@ -264,6 +264,7 @@ where
     /// Allocate the given multiline label into an available slot.
     #[inline]
     fn allocate_multiline_label(&mut self, label: MultilineLabel) {
+        // find the first non active slot
         let slot_index = self
             .multiline_slots
             .iter()
@@ -271,6 +272,7 @@ where
             .find(|(_, slot)| !slot.is_active())
             .map(|(index, _)| index);
 
+        // and then allocate the label in it
         if let Some(slot_index) = slot_index {
             self.multiline_slots[slot_index] = Slot::RecentlyAdded(label);
         } else {
@@ -544,12 +546,16 @@ where
 
         loop {
             if !self.has_active_multiline_labels() {
+                // TODO: turn into a "next line index" instead of next label, so that the label
+                // isn't taken here and doesn't need special treatment later
                 let Some(label) = self.next_label() else {
                     break;
                 };
 
                 match label {
+                    // singleline
                     Either::Left(label) => {
+                        // jump to the line of the singleline label
                         let line_index = label.line;
                         self.current_line = line_index;
 
@@ -559,7 +565,9 @@ where
 
                         self.emit_singleline_labels_in_current(line)?;
                     }
+                    // multiline
                     Either::Right(label) => {
+                        // jump to the start of the multiline label
                         let line_index = label.line_range.start;
                         self.current_line = line_index;
 
