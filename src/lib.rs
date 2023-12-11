@@ -4,9 +4,11 @@
 pub mod diagnostic;
 /// Module for source related items.
 pub mod source;
-
+/// Module for testing related utilities.
 #[cfg(test)]
 pub(crate) mod test;
+/// Module for text related utilities.
+pub(crate) mod text;
 
 pub use owo_colors;
 
