@@ -1,6 +1,5 @@
 ---
 source: src/diagnostic.rs
-assertion_line: 373
 expression: ansi
 ---
 [
