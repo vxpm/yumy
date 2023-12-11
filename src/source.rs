@@ -44,6 +44,12 @@ impl SourceSpan {
         self.end - self.start()
     }
 
+    /// Whether this span is empty or not.
+    #[inline]
+    pub fn is_empty(&self) -> bool {
+        self.start() == self.end
+    }
+
     /// Does this span contain the given value?
     #[inline]
     pub fn contains(&self, value: u32) -> bool {
@@ -140,23 +146,31 @@ impl<'src> Source<'src> {
         self.lines.iter()
     }
 
-    pub(crate) fn line_index_of_byte(&self, byte_index: u32) -> Option<u32> {
-        if byte_index > self.src.len() as u32 {
+    pub(crate) fn line_index_at(&self, index: u32) -> Option<u32> {
+        if index > self.src.len() as u32 {
             return None;
         }
 
         // TODO: change to a binary search
-        for (index, line) in self.lines.iter().enumerate() {
-            if line.span.contains(byte_index) {
-                return Some(index as u32);
+        for (line_index, line) in self.lines.iter().enumerate() {
+            if line.span.contains(index) {
+                return Some(line_index as u32);
             }
 
-            if line.span.start() > byte_index {
-                return Some((index - 1) as u32);
+            if line.span.start() > index {
+                return Some((line_index - 1) as u32);
             }
         }
 
         None
+    }
+
+    /// Returns the line range of a span in this source.
+    pub fn line_range_of_span(&self, span: SourceSpan) -> Option<Range<u32>> {
+        let start = self.line_index_at(span.start())?;
+        let end = self.line_index_at(span.end().saturating_sub(1).max(span.start()))?;
+
+        Some(start..end + 1)
     }
 }
 
@@ -210,5 +224,15 @@ mod test {
             }),
             lines.next()
         );
+    }
+
+    #[test]
+    pub fn test_line_range() {
+        let src = Source::new(SAMPLE, None);
+
+        assert_eq!(Some(1..2), src.line_range_of_span(SourceSpan::new(21, 28)));
+        assert_eq!(Some(1..2), src.line_range_of_span(SourceSpan::new(21, 29)));
+        assert_eq!(Some(1..3), src.line_range_of_span(SourceSpan::new(21, 30)));
+        assert_eq!(Some(1..4), src.line_range_of_span(SourceSpan::new(21, 31)));
     }
 }

@@ -56,14 +56,8 @@ impl Label {
     /// # Panics
     /// Panics if the span is out of bounds.
     fn line_range(&self, src: &Source) -> Range<u32> {
-        let start = src
-            .line_index_of_byte(self.span.start())
-            .expect("span start should be in bounds");
-        let end = src
-            .line_index_of_byte(self.span.end().saturating_sub(1))
-            .expect("span end should be in bounds");
-
-        start..(end + 1)
+        src.line_range_of_span(self.span)
+            .expect("label should have span in range")
     }
 
     /// Returns whether this label is singleline or not.
@@ -173,7 +167,7 @@ impl<'src> Diagnostic<Source<'src>> {
             // find last line of label
             let line_index = self
                 .source
-                .line_index_of_byte(label.span.end().saturating_sub(1));
+                .line_index_at(label.span.end().saturating_sub(1));
             let index_algs = line_index
                 .map(|x| f32::log10(x as f32).floor() as usize)
                 .unwrap_or(0);
