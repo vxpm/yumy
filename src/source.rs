@@ -151,18 +151,10 @@ impl<'src> Source<'src> {
             return None;
         }
 
-        // TODO: change to a binary search
-        for (line_index, line) in self.lines.iter().enumerate() {
-            if line.span.contains(index) {
-                return Some(line_index as u32);
-            }
-
-            if line.span.start() > index {
-                return Some((line_index - 1) as u32);
-            }
-        }
-
-        None
+        self.lines
+            .partition_point(|line| line.span.start() <= index)
+            .checked_sub(1)
+            .map(|x| x as u32)
     }
 
     /// Returns the line range of a span in this source.
