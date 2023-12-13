@@ -4,11 +4,6 @@ use std::{
 };
 
 #[inline(always)]
-pub(crate) fn type_name_of_val<T>(_: T) -> &'static str {
-    std::any::type_name::<T>()
-}
-
-#[inline(always)]
 pub(crate) fn snapshots_path() -> &'static Path {
     static PATH: OnceLock<PathBuf> = OnceLock::new();
 
