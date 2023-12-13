@@ -1,0 +1,11 @@
+---
+source: src/diagnostic.rs
+expression: clean
+---
+error[E0072]: recursive type `List` has infinite size
+@ [src/lib.rs]:
+│ [line 3]: 
+│ [line 4]: recursive without indirection
+> error: could not compile `playground` (lib) due to previous error
+
+
