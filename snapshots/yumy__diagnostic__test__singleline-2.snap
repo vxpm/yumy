@@ -378,7 +378,7 @@ expression: ansi
         ),
     },
     AnsiBlock {
-        text: "  ",
+        text: " ",
         state: Style(
             AnsiState {
                 fg_color: None,
@@ -1216,7 +1216,7 @@ expression: ansi
         ),
     },
     AnsiBlock {
-        text: "      ",
+        text: "     ",
         state: Style(
             AnsiState {
                 fg_color: None,

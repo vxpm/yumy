@@ -69,12 +69,12 @@ where
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct SourceLine<'src> {
     pub span: SourceSpan,
-    pub line: &'src str,
+    pub text: &'src str,
 }
 
 impl<'src> SourceLine<'src> {
-    pub fn new(line: &'src str, span: SourceSpan) -> Self {
-        Self { span, line }
+    pub fn new(text: &'src str, span: SourceSpan) -> Self {
+        Self { span, text }
     }
 }
 
@@ -99,7 +99,7 @@ impl<'src> Source<'src> {
 
             SourceLine {
                 span: SourceSpan::new(offset as u32, end as u32),
-                line,
+                text: line,
             }
         });
 
@@ -180,7 +180,7 @@ mod test {
         assert_eq!(
             Some(&SourceLine {
                 span: SourceSpan::new(0, 20),
-                line: "hello there darling!"
+                text: "hello there darling!"
             }),
             lines.next()
         );
@@ -191,7 +191,7 @@ mod test {
         assert_eq!(
             Some(&SourceLine {
                 span: SourceSpan::new(21, 28),
-                line: "this is"
+                text: "this is"
             }),
             lines.next()
         );
@@ -201,7 +201,7 @@ mod test {
         assert_eq!(
             Some(&SourceLine {
                 span: SourceSpan::new(29, 29),
-                line: ""
+                text: ""
             }),
             lines.next()
         );
@@ -212,7 +212,7 @@ mod test {
         assert_eq!(
             Some(&SourceLine {
                 span: SourceSpan::new(30, 46),
-                line: "a sample text :)"
+                text: "a sample text :)"
             }),
             lines.next()
         );

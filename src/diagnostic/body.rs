@@ -7,35 +7,10 @@ use either::Either;
 use owo_colors::{OwoColorize, Style};
 use std::{io::Write, ops::Range};
 
-#[derive(Debug, Clone, Copy)]
-struct IdentInfo {
-    end: usize,
-    len: usize,
-}
-
-fn ident_info(text: &str) -> IdentInfo {
-    let mut len = 0;
-    let mut c_indices = text.char_indices();
-
-    let end = loop {
-        let Some((start, c)) = c_indices.next() else {
-            break text.len();
-        };
-
-        len += match c {
-            ' ' => 1,
-            '\t' => 4,
-            _ => break start,
-        }
-    };
-
-    IdentInfo { end, len }
-}
-
 #[derive(Debug, Clone)]
 struct SinglelineLabel {
     message: String,
-    line: u32,
+    line_index: u32,
     line_span: SourceSpan,
     indicator_style: Option<Style>,
 }
@@ -122,7 +97,6 @@ where
 
         let mut current = 0;
         let mut max = 0;
-
         for event in events {
             match event {
                 Event::Start(_) => current += 1,
@@ -156,7 +130,7 @@ where
 
                 let label = SinglelineLabel {
                     message: label.message.clone(),
-                    line: label.line_range(&source).start,
+                    line_index: label.line_range(&source).start,
                     line_span: SourceSpan::new(label_line_start, label_line_end),
                     indicator_style: label.indicator_style,
                 };
@@ -174,7 +148,7 @@ where
 
         let singleline_lines = singleline_labels
             .iter()
-            .map(|label| source.line(label.line).unwrap());
+            .map(|label| source.line(label.line_index).unwrap());
         let multiline_lines = multiline_labels.iter().flat_map(|label| {
             [
                 source.line(label.line_range.start).unwrap(),
@@ -184,7 +158,7 @@ where
 
         let ident_width = singleline_lines
             .chain(multiline_lines)
-            .map(|line| ident_info(line.line).len)
+            .map(|line| crate::text::dedent(line.text).0)
             .min()
             .unwrap_or(0);
 
@@ -206,7 +180,7 @@ where
         let next_singleline_label = self
             .singleline_labels
             .iter()
-            .map(|x| x.line)
+            .map(|x| x.line_index)
             .enumerate()
             .min_by_key(|(_, start)| *start);
 
@@ -240,7 +214,7 @@ where
         self.singleline_labels
             .iter()
             .enumerate()
-            .find(|(_, label)| label.line == self.current_line)
+            .find(|(_, label)| label.line_index == self.current_line)
             .map(|(index, _)| index)
             .map(|index| self.singleline_labels.remove(index))
     }
@@ -312,12 +286,8 @@ where
 
     fn emit_multiline_indicators(&mut self) -> std::io::Result<()> {
         for slot in self.multiline_slots.iter_mut() {
-            let (is_new, label) = match slot {
-                slot @ Slot::RecentlyAdded(_) => {
-                    let Slot::RecentlyAdded(label) = std::mem::take(slot) else {
-                        unreachable!()
-                    };
-
+            let (is_new, label) = match std::mem::take(slot) {
+                Slot::RecentlyAdded(label) => {
                     *slot = Slot::Active(label);
                     let Slot::Active(ref label) = slot else {
                         unreachable!()
@@ -325,7 +295,14 @@ where
 
                     (true, label)
                 }
-                Slot::Active(label) => (false, &*label),
+                Slot::Active(label) => {
+                    *slot = Slot::Active(label);
+                    let Slot::Active(ref label) = slot else {
+                        unreachable!()
+                    };
+
+                    (false, label)
+                }
                 Slot::Inactive => {
                     write!(self.writer, " ")?;
                     continue;
@@ -355,17 +332,13 @@ where
         self.emit_left_column(line_index as usize)?;
         self.emit_multiline_indicators()?;
 
-        let line_ident_info = ident_info(line.line);
-        let spaces = line_ident_info.len - self.ident_len;
+        let (ident_len, dedented_line) = crate::text::dedent(line.text);
+        let spaces = ident_len - self.ident_len;
 
         let style = self.source.style().unwrap_or(self.config.styles.source);
 
-        write!(self.writer, "{:x$} ", "", x = spaces)?;
-        writeln!(
-            self.writer,
-            "{}",
-            (&line.line[line_ident_info.end..]).style(style),
-        )?;
+        write!(self.writer, "{:x$}", "", x = spaces)?;
+        writeln!(self.writer, "{}", (dedented_line).style(style),)?;
         Ok(())
     }
 
@@ -378,15 +351,15 @@ where
         self.emit_left_column(None)?;
         self.emit_multiline_indicators()?;
 
-        let line_ident_info = ident_info(line.line);
-        let spaces = line_ident_info.len - self.ident_len;
+        let (ident_len, _) = crate::text::dedent(line.text);
+        let spaces = ident_len - self.ident_len;
 
-        let line_width = unicode_width::UnicodeWidthStr::width(line.line);
+        let line_width = crate::text::string_display_width(line.text);
 
         let before_underliner_width = spaces
-            + unicode_width::UnicodeWidthStr::width(&line.line[..label.line_span.start() as usize]);
+            + crate::text::string_display_width(&line.text[..label.line_span.start() as usize]);
         let after_underliner_width =
-            unicode_width::UnicodeWidthStr::width(&line.line[label.line_span.end() as usize..]);
+            crate::text::string_display_width(&line.text[label.line_span.end() as usize..]);
         let underliner_width = line_width - (before_underliner_width + after_underliner_width);
 
         let before = std::iter::repeat(' ').take(before_underliner_width);
@@ -425,7 +398,7 @@ where
         label_slot: u32,
     ) -> std::io::Result<()> {
         self.emit_left_column(None)?;
-        let line_width = unicode_width::UnicodeWidthStr::width(line.line);
+        let line_width = unicode_width::UnicodeWidthStr::width(line.text);
         let this_style = label.indicator_style;
 
         for slot in &self.multiline_slots[..label_slot as usize] {
@@ -556,7 +529,7 @@ where
                     // singleline
                     Either::Left(label) => {
                         // jump to the line of the singleline label
-                        let line_index = label.line;
+                        let line_index = label.line_index;
                         self.current_line = line_index;
 
                         let line = self.source.line(line_index).unwrap();
