@@ -3,9 +3,9 @@ mod body;
 /// Module for diagnostic configuration related items.
 pub mod config;
 
-use self::config::Config;
+use self::{body::BodyWriter, config::Config};
 use super::source::{NoSource, Source, SourceSpan};
-use body::BodyPreprocessor;
+use body::BodyBuilder;
 use owo_colors::{OwoColorize, Style};
 use std::{
     io::{BufWriter, Write},
@@ -55,7 +55,7 @@ impl Label {
     ///
     /// # Panics
     /// Panics if the span is out of bounds.
-    fn line_range(&self, src: &Source) -> Range<u32> {
+    fn line_range(&self, src: &Source) -> Range<usize> {
         src.line_range_of_span(self.span)
             .expect("label should have span in range")
     }
@@ -167,7 +167,7 @@ impl<'src> Diagnostic<Source<'src>> {
             // find last line of label
             let line_index = self
                 .source
-                .line_index_at(label.span.end().saturating_sub(1));
+                .line_index_at(label.span.end().saturating_sub(1) as usize);
             let index_algs = line_index
                 .map(|x| f32::log10(x as f32).floor() as usize)
                 .unwrap_or(0);
@@ -224,16 +224,11 @@ impl<'src> Diagnostic<Source<'src>> {
     where
         W: Write,
     {
-        // let body_lines = BodyPreprocessor::new(
-        //     writer,
-        //     self.source.clone(),
-        //     config,
-        //     self.left_padding(),
-        //     self.labels.as_slice(),
-        // );
-        //
-        // body_lines.write()?;
-        //
+        let body_builder = BodyBuilder::new(self.source.clone(), self.labels.clone());
+        let body_descriptor = body_builder.build();
+        let body_writer = BodyWriter::new(writer, config.clone(), body_descriptor);
+        body_writer.write()?;
+
         Ok(())
     }
 
@@ -355,12 +350,32 @@ mod test {
 
     #[test]
     fn test_singleline() {
-        let src = Source::new(crate::test::RUST_SAMPLE, Some("src/lib.rs"));
+        let src = Source::new(crate::test::RUST_SAMPLE_1, Some("src/lib.rs"));
         let diagnostic = Diagnostic::new("error[E0072]: recursive type `List` has infinite size")
             .with_label(Label::new(53..66u32, ""))
             .with_label(Label::new(83..87u32, "recursive without indirection"))
             .with_footnote("error: could not compile `playground` (lib) due to previous error")
             .with_source(src);
+
+        diagnostic_snapshot!(diagnostic);
+    }
+
+    #[test]
+    fn test_multiline() {
+        let src = Source::new(crate::test::RUST_SAMPLE_2, Some("src/main.rs"));
+        let diagnostic =
+            Diagnostic::new("error[E0277]: `Rc<Mutex<i32>>` cannot be sent between threads safely")
+                .with_label(Label::new(
+                    247..260u32,
+                    "required by a bound introduced by this call",
+                ))
+                .with_label(Label::new(
+                    261..357u32,
+                    "`Rc<Mutex<i32>>` cannot be sent between threads safely",
+                ))
+                .with_footnote("help: within `{closure@src/main.rs:11:36: 11:43}`, the trait `Send` is not implemented for `Rc<Mutex<i32>>`")
+                .with_footnote("note: required because it's used within this closure")
+                .with_source(src);
 
         diagnostic_snapshot!(diagnostic);
     }

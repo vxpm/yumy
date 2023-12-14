@@ -1,0 +1,82 @@
+---
+source: src/diagnostic/body.rs
+expression: preprocessor.build()
+---
+BodyDescriptor(
+    [
+        EmitLine(
+            SourceLine {
+                index: 12,
+                span: SourceSpan {
+                    start: 226,
+                    end: 270,
+                },
+                text: "        let handle = thread::spawn(move || {",
+            },
+        ),
+        EmitSinglelineLabel(
+            Label {
+                message: "required by a bound introduced by this call",
+                span: SourceSpan {
+                    start: 247,
+                    end: 260,
+                },
+                indicator_style: None,
+            },
+        ),
+        StartMultilineLabel {
+            label: Label {
+                message: "`Rc<Mutex<i32>>` cannot be sent between threads safely",
+                span: SourceSpan {
+                    start: 261,
+                    end: 357,
+                },
+                indicator_style: None,
+            },
+            id: 0,
+        },
+        EmitLine(
+            SourceLine {
+                index: 13,
+                span: SourceSpan {
+                    start: 271,
+                    end: 321,
+                },
+                text: "            let mut num = counter.lock().unwrap();",
+            },
+        ),
+        EmitLine(
+            SourceLine {
+                index: 14,
+                span: SourceSpan {
+                    start: 322,
+                    end: 322,
+                },
+                text: "",
+            },
+        ),
+        EmitLine(
+            SourceLine {
+                index: 15,
+                span: SourceSpan {
+                    start: 323,
+                    end: 345,
+                },
+                text: "            *num += 1;",
+            },
+        ),
+        EmitLine(
+            SourceLine {
+                index: 16,
+                span: SourceSpan {
+                    start: 346,
+                    end: 357,
+                },
+                text: "        });",
+            },
+        ),
+        EndMultilineLabel(
+            0,
+        ),
+    ],
+)

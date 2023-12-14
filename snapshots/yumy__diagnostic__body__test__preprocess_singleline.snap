@@ -1,0 +1,48 @@
+---
+source: src/diagnostic/body.rs
+expression: preprocessor.build()
+---
+BodyDescriptor(
+    [
+        EmitLine(
+            SourceLine {
+                index: 3,
+                span: SourceSpan {
+                    start: 53,
+                    end: 68,
+                },
+                text: "pub enum List {",
+            },
+        ),
+        EmitSinglelineLabel(
+            Label {
+                message: "",
+                span: SourceSpan {
+                    start: 53,
+                    end: 66,
+                },
+                indicator_style: None,
+            },
+        ),
+        EmitLine(
+            SourceLine {
+                index: 4,
+                span: SourceSpan {
+                    start: 69,
+                    end: 89,
+                },
+                text: "    Cons(i32, List),",
+            },
+        ),
+        EmitSinglelineLabel(
+            Label {
+                message: "recursive without indirection",
+                span: SourceSpan {
+                    start: 83,
+                    end: 87,
+                },
+                indicator_style: None,
+            },
+        ),
+    ],
+)

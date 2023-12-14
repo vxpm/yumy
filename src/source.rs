@@ -1,4 +1,4 @@
-use std::ops::Range;
+use std::{ops::Range, sync::Arc};
 
 use nonmax::NonMaxU32;
 use owo_colors::Style;
@@ -68,13 +68,14 @@ where
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct SourceLine<'src> {
+    pub index: usize,
     pub span: SourceSpan,
     pub text: &'src str,
 }
 
 impl<'src> SourceLine<'src> {
-    pub fn new(text: &'src str, span: SourceSpan) -> Self {
-        Self { span, text }
+    pub fn new(index: usize, span: SourceSpan, text: &'src str) -> Self {
+        Self { index, span, text }
     }
 }
 
@@ -84,13 +85,13 @@ pub struct Source<'src> {
     src: &'src str,
     name: Option<&'src str>,
     style: Option<Style>,
-    lines: Vec<SourceLine<'src>>,
+    lines: Arc<Vec<SourceLine<'src>>>,
 }
 
 impl<'src> Source<'src> {
     fn lines_of(src: &str) -> Vec<SourceLine> {
         let base_addr = src.as_ptr();
-        let lines = src.lines().map(|line| {
+        let lines = src.lines().enumerate().map(|(index, line)| {
             let line_addr = line.as_ptr();
             let offset = (line_addr as usize)
                 .checked_sub(base_addr as usize)
@@ -98,6 +99,7 @@ impl<'src> Source<'src> {
             let end = offset + line.len();
 
             SourceLine {
+                index,
                 span: SourceSpan::new(offset as u32, end as u32),
                 text: line,
             }
@@ -112,7 +114,7 @@ impl<'src> Source<'src> {
             src,
             name,
             style: None,
-            lines: Self::lines_of(src),
+            lines: Arc::new(Self::lines_of(src)),
         }
     }
 
@@ -122,7 +124,7 @@ impl<'src> Source<'src> {
             src,
             name,
             style: Some(style),
-            lines: Self::lines_of(src),
+            lines: Arc::new(Self::lines_of(src)),
         }
     }
 
@@ -138,7 +140,7 @@ impl<'src> Source<'src> {
         self.style
     }
 
-    pub fn line(&self, index: u32) -> Option<SourceLine<'src>> {
+    pub fn line(&self, index: usize) -> Option<SourceLine<'src>> {
         self.lines.get(index as usize).copied()
     }
 
@@ -146,21 +148,21 @@ impl<'src> Source<'src> {
         self.lines.iter()
     }
 
-    pub(crate) fn line_index_at(&self, index: u32) -> Option<u32> {
-        if index > self.src.len() as u32 {
+    pub(crate) fn line_index_at(&self, index: usize) -> Option<usize> {
+        if index > self.src.len() {
             return None;
         }
 
         self.lines
-            .partition_point(|line| line.span.start() <= index)
+            .partition_point(|line| line.span.start() as usize <= index)
             .checked_sub(1)
-            .map(|x| x as u32)
+            .map(|x| x)
     }
 
     /// Returns the line range of a span in this source.
-    pub fn line_range_of_span(&self, span: SourceSpan) -> Option<Range<u32>> {
-        let start = self.line_index_at(span.start())?;
-        let end = self.line_index_at(span.end().saturating_sub(1).max(span.start()))?;
+    pub fn line_range_of_span(&self, span: SourceSpan) -> Option<Range<usize>> {
+        let start = self.line_index_at(span.start() as usize)?;
+        let end = self.line_index_at(span.end().saturating_sub(1).max(span.start()) as usize)?;
 
         Some(start..end + 1)
     }
@@ -179,6 +181,7 @@ mod test {
 
         assert_eq!(
             Some(&SourceLine {
+                index: 0,
                 span: SourceSpan::new(0, 20),
                 text: "hello there darling!"
             }),
@@ -190,6 +193,7 @@ mod test {
 
         assert_eq!(
             Some(&SourceLine {
+                index: 1,
                 span: SourceSpan::new(21, 28),
                 text: "this is"
             }),
@@ -200,6 +204,7 @@ mod test {
 
         assert_eq!(
             Some(&SourceLine {
+                index: 2,
                 span: SourceSpan::new(29, 29),
                 text: ""
             }),
@@ -211,6 +216,7 @@ mod test {
 
         assert_eq!(
             Some(&SourceLine {
+                index: 3,
                 span: SourceSpan::new(30, 46),
                 text: "a sample text :)"
             }),

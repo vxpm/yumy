@@ -3,7 +3,8 @@ use std::{
     sync::OnceLock,
 };
 
-pub(crate) const RUST_SAMPLE: &str = include_str!("../samples/sample2.rs");
+pub(crate) const RUST_SAMPLE_1: &str = include_str!("../samples/sample2.rs");
+pub(crate) const RUST_SAMPLE_2: &str = include_str!("../samples/sample3.rs");
 
 #[inline(always)]
 pub(crate) fn snapshots_path() -> &'static Path {
@@ -15,6 +16,14 @@ pub(crate) fn snapshots_path() -> &'static Path {
         p
     })
     .as_path()
+}
+
+macro_rules! setup_insta {
+    () => {
+        let mut settings = ::insta::Settings::clone_current();
+        settings.set_snapshot_path(crate::test::snapshots_path());
+        let _guard = settings.bind_to_scope();
+    };
 }
 
 /// Asserts a snapshot of the diagnostic.
@@ -37,11 +46,7 @@ macro_rules! diagnostic_snapshot {
             .unzip();
         let clean = clean.join("");
 
-        // setup settings
-        let mut settings = ::insta::Settings::clone_current();
-        settings.set_snapshot_path(crate::test::snapshots_path());
-        let _guard = settings.bind_to_scope();
-
+        crate::test::setup_insta!();
         ::insta::assert_snapshot!(clean);
         ::insta::assert_debug_snapshot!(ansi);
     }};
@@ -60,11 +65,7 @@ macro_rules! diagnostic_snapshot {
             .unzip();
         let clean = clean.join("");
 
-        // setup settings
-        let mut settings = ::insta::Settings::clone_current();
-        settings.set_snapshot_path(crate::test::snapshots_path());
-        let _guard = settings.bind_to_scope();
-
+        crate::test::setup_insta!();
         ::insta::assert_snapshot!(clean);
         ::insta::assert_debug_snapshot!(ansi);
     }};
@@ -75,3 +76,4 @@ macro_rules! diagnostic_snapshot {
 }
 
 pub(crate) use diagnostic_snapshot;
+pub(crate) use setup_insta;
