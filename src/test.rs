@@ -3,6 +3,8 @@ use std::{
     sync::OnceLock,
 };
 
+pub(crate) const RUST_SAMPLE: &str = include_str!("../samples/sample2.rs");
+
 #[inline(always)]
 pub(crate) fn snapshots_path() -> &'static Path {
     static PATH: OnceLock<PathBuf> = OnceLock::new();

@@ -33,80 +33,130 @@ impl Slot {
     }
 }
 
-/// Struct that takes care of emitting the body of a diagnostic.
-/// Keeping the state for this in it's own struct is easier.
-pub(crate) struct BodyWriter<'src, W> {
-    writer: W,
-    source: Source<'src>,
-    config: Config,
-    left_padding: usize,
-    labels: Vec<Label>,
-    slots: Vec<Slot>,
-    current_line: u32,
+#[derive(Debug, Clone)]
+enum BodyAction {
+    Line(u32),
+    SinglelineLabel(Label),
+    StartMultilineLabel { label: Label, id: u32 },
+    EndMultilineLabel(u32),
 }
 
-impl<'src, W> BodyWriter<'src, W>
-where
-    W: Write,
-{
-    /// Calculates the number of slots needed for a set
-    /// of multiline labels.
-    fn slots_needed(source: &Source, labels: &[Label]) -> usize {
-        enum Event {
-            Start(u32),
-            End(u32),
+/// Struct that takes care of emitting the body of a diagnostic.
+/// Keeping the state for this in it's own struct is easier.
+pub(crate) struct BodyPreprocessor<'src> {
+    source: Source<'src>,
+    labels: Vec<Label>,
+    active_labels: Vec<(Label, u32)>,
+    multiline_id: u32,
+    current_line: u32,
+    result: Vec<BodyAction>,
+}
+
+impl<'src> BodyPreprocessor<'src> {
+    pub(crate) fn new(source: Source<'src>, mut labels: Vec<Label>) -> Self {
+        // sort labels by their start, in reverse order (make it a stack)
+        labels.sort_by_key(|label| std::cmp::Reverse(label.span.start()));
+        Self {
+            source,
+            labels,
+            active_labels: Vec::new(),
+            multiline_id: 0,
+            current_line: 0,
+            result: Vec::new(),
         }
-
-        impl Event {
-            fn index(&self) -> u32 {
-                match self {
-                    Event::Start(x) => *x,
-                    Event::End(x) => *x,
-                }
-            }
-        }
-
-        let mut events: Vec<_> = labels
-            .iter()
-            .flat_map(|label| {
-                let line_range = label.line_range(source);
-                [Event::Start(line_range.start), Event::End(line_range.end)]
-            })
-            .collect();
-
-        events.sort_unstable_by(|a, b| a.index().cmp(&b.index()));
-
-        let mut current = 0;
-        let mut max = 0;
-        for event in events {
-            match event {
-                Event::Start(_) => current += 1,
-                Event::End(_) => current -= 1,
-            }
-
-            if current > max {
-                max = current;
-            }
-        }
-
-        max
     }
 
-    pub(crate) fn new(
-        writer: W,
-        source: Source<'src>,
-        config: &Config,
-        left_padding: usize,
-        labels: Vec<Label>,
-    ) -> Self {
-        Self {
-            writer,
-            source,
-            config: config.clone(),
-            left_padding,
-            labels,
-            slots: vec![Slot::Inactive; Self::slots_needed(&source, &labels)],
-            current_line: 0,
+    fn emit_labels_in_current(&mut self) {
+        loop {
+            let Some(label) = self.labels.pop() else {
+                break;
+            };
+
+            let label_start_line = self
+                .source
+                .line_index_at(label.span.start())
+                .expect("valid label");
+
+            if label_start_line == self.current_line {
+                if label.is_singleline(&self.source) {
+                    self.result.push(BodyAction::SinglelineLabel(label));
+                } else {
+                    self.result.push(BodyAction::StartMultilineLabel {
+                        label: label,
+                        id: self.multiline_id,
+                    });
+                    self.multiline_id += 1;
+                }
+            } else {
+                self.labels.push(label);
+                break;
+            }
         }
+    }
+
+    fn finish_labels_in_current(&mut self) {
+        self.active_labels.retain(|(label, label_id)| {
+            let finished = self
+                .source
+                .line_index_at(label.span.end())
+                .expect("valid label")
+                != self.current_line;
+
+            if finished {
+                self.result.push(BodyAction::EndMultilineLabel(*label_id));
+            }
+
+            finished
+        });
+    }
+
+    pub(crate) fn preprocess(mut self) -> Vec<BodyAction> {
+        // here's how it should go:
+        // - if no active labels:
+        // -- find next label and jump to its start
+        // -- if singleline, emit the label
+        // -- if multiline, start it
+        // - if active labels:
+        // -- go line by line
+        // -- if a singleline label is in its start, emit it
+        // -- if a multiline ends, remove it
+
+        while !self.labels.is_empty() {
+            if self.active_labels.is_empty() {
+                let label = self.labels.last().expect("has remaining labels");
+                self.current_line = self
+                    .source
+                    .line_index_at(label.span.start())
+                    .expect("label span is valid");
+            } else {
+                self.current_line += 1;
+            }
+
+            self.result.push(BodyAction::Line(self.current_line));
+            self.emit_labels_in_current();
+            self.finish_labels_in_current();
+        }
+
+        self.result
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::{Label, Source};
+
+    #[test]
+    fn test_preprocess_singleline() {
+        let src = Source::new(crate::test::RUST_SAMPLE, Some("src/lib.rs"));
+        let labels = vec![
+            Label::new(53..66u32, ""),
+            Label::new(83..87u32, "recursive without indirection"),
+        ];
+
+        let preprocessor = BodyPreprocessor::new(src, labels);
+
+        // TODO: make this go to the correct directory!!
+        insta::assert_debug_snapshot!(preprocessor.preprocess());
     }
 }
