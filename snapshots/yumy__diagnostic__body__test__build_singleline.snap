@@ -1,13 +1,18 @@
 ---
 source: src/diagnostic/body.rs
-expression: preprocessor.build()
+expression: builder.build()
 ---
-BodyDescriptor(
-    [
+BodyDescriptor {
+    events: [
         EmitLine(
             SourceLine {
                 index: 3,
-                span: SourceSpan {
+                indent_size: 0,
+                full_span: SourceSpan {
+                    start: 53,
+                    end: 68,
+                },
+                dedented_span: SourceSpan {
                     start: 53,
                     end: 68,
                 },
@@ -27,11 +32,16 @@ BodyDescriptor(
         EmitLine(
             SourceLine {
                 index: 4,
-                span: SourceSpan {
+                indent_size: 4,
+                full_span: SourceSpan {
                     start: 69,
                     end: 89,
                 },
-                text: "    Cons(i32, List),",
+                dedented_span: SourceSpan {
+                    start: 73,
+                    end: 89,
+                },
+                text: "Cons(i32, List),",
             },
         ),
         EmitSinglelineLabel(
@@ -45,4 +55,5 @@ BodyDescriptor(
             },
         ),
     ],
-)
+    indent_trim: 0,
+}

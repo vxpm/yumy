@@ -22,6 +22,7 @@ pub(crate) struct BodyBuilder<'src> {
     active_labels: Vec<(usize, SourceSpan)>,
     multiline_id: usize,
     current_line: usize,
+    indent_trim: usize,
     result: Vec<BodyEvent<'src>>,
 }
 
@@ -35,6 +36,7 @@ impl<'src> BodyBuilder<'src> {
             active_labels: Vec::new(),
             multiline_id: 0,
             current_line: 0,
+            indent_trim: usize::MAX,
             result: Vec::new(),
         }
     }
@@ -107,32 +109,39 @@ impl<'src> BodyBuilder<'src> {
             }
 
             let line = self.source.line(self.current_line).expect("valid line");
+
+            // special case: if the line is empty, don't consider it for indent trimming
+            if !line.text().is_empty() {
+                self.indent_trim = self.indent_trim.min(line.indent_size());
+            }
+
             self.result.push(BodyEvent::EmitLine(line));
             self.emit_labels_in_current();
             self.finish_labels_in_current();
         }
     }
 
-    fn preprocess(&mut self) {
-        // todo
-    }
-
     pub(crate) fn build(mut self) -> BodyDescriptor<'src> {
         self.emit_events();
-        self.preprocess();
-        BodyDescriptor(self.result)
+        BodyDescriptor {
+            events: self.result,
+            indent_trim: self.indent_trim,
+        }
     }
 }
 
 #[derive(Debug)]
-pub(crate) struct BodyDescriptor<'src>(Vec<BodyEvent<'src>>);
+pub(crate) struct BodyDescriptor<'src> {
+    events: Vec<BodyEvent<'src>>,
+    indent_trim: usize,
+}
 
 impl<'src> BodyDescriptor<'src> {
     /// Calculates the maximum number of parallel multiline labels that happens in this descriptor.
     fn maximum_parallel_labels(&self) -> usize {
         let mut count = 0;
         let mut max = 0;
-        for event in self.0.iter() {
+        for event in self.events.iter() {
             match event {
                 BodyEvent::StartMultilineLabel { .. } => count += 1,
                 BodyEvent::EndMultilineLabel(_) => count -= 1,
@@ -147,12 +156,12 @@ impl<'src> BodyDescriptor<'src> {
 
     /// Calculates the width of the line number section in the body.
     fn line_number_width(&self) -> usize {
-        self.0
+        self.events
             .iter()
             .rev()
             .find_map(|event| {
                 if let BodyEvent::EmitLine(line) = event {
-                    Some(line.index + 1)
+                    Some(line.index() + 1)
                 } else {
                     None
                 }
@@ -216,14 +225,33 @@ where
     }
 
     pub(crate) fn write(mut self) -> std::io::Result<()> {
-        let events = std::mem::take(&mut self.descriptor.0);
+        let events = std::mem::take(&mut self.descriptor.events);
+        let mut current_indent_level;
+        let mut current_line_width;
         for event in events {
             match event {
                 BodyEvent::EmitLine(line) => {
-                    self.emit_left_column(Some(line.index + 1))?;
-                    writeln!(self.writer, "{}", line.text)?;
+                    // write the left column
+                    self.emit_left_column(Some(line.index() + 1))?;
+
+                    // calculate new indentation level
+                    // remember the special case: if the line is empty, don't
+                    // attempt to trim it
+                    current_indent_level = if line.text().is_empty() {
+                        0
+                    } else {
+                        line.indent_size() - self.descriptor.indent_trim
+                    };
+
+                    // calculate new line width
+                    current_line_width = crate::text::string_display_width(line.text());
+
+                    // finally, write the line
+                    writeln!(self.writer, "{:current_indent_level$}{}", "", line.text())?;
                 }
-                BodyEvent::EmitSinglelineLabel(_) => (),
+                BodyEvent::EmitSinglelineLabel(label) => {
+                    // todo
+                }
                 BodyEvent::StartMultilineLabel { label, id } => (),
                 BodyEvent::EndMultilineLabel(_) => (),
             }
@@ -238,21 +266,21 @@ mod test {
     use crate::{Label, Source};
 
     #[test]
-    fn test_preprocess_singleline() {
+    fn test_build_singleline() {
         let src = Source::new(crate::test::RUST_SAMPLE_1, Some("src/lib.rs"));
         let labels = vec![
             Label::new(53..66u32, ""),
             Label::new(83..87u32, "recursive without indirection"),
         ];
 
-        let preprocessor = BodyBuilder::new(src, labels);
+        let builder = BodyBuilder::new(src, labels);
 
         crate::test::setup_insta!();
-        insta::assert_debug_snapshot!(preprocessor.build());
+        insta::assert_debug_snapshot!(builder.build());
     }
 
     #[test]
-    fn test_preprocess_multiline() {
+    fn test_build_multiline() {
         let src = Source::new(crate::test::RUST_SAMPLE_2, Some("src/main.rs"));
         let labels = vec![
             Label::new(247..260u32, "required by a bound introduced by this call"),
@@ -262,9 +290,9 @@ mod test {
             ),
         ];
 
-        let preprocessor = BodyBuilder::new(src, labels);
+        let builder = BodyBuilder::new(src, labels);
 
         crate::test::setup_insta!();
-        insta::assert_debug_snapshot!(preprocessor.build());
+        insta::assert_debug_snapshot!(builder.build());
     }
 }

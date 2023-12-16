@@ -4,11 +4,11 @@ expression: clean
 ---
 error[E0277]: `Rc<Mutex<i32>>` cannot be sent between threads safely
    @ [src/main.rs]
-14 │         let handle = thread::spawn(move || {
-15 │             let mut num = counter.lock().unwrap();
+14 │ let handle = thread::spawn(move || {
+15 │     let mut num = counter.lock().unwrap();
 16 │ 
-17 │             *num += 1;
-18 │         });
+17 │     *num += 1;
+18 │ });
    > help: within `{closure@src/main.rs:11:36: 11:43}`, the trait `Send` is not implemented for `Rc<Mutex<i32>>`
    > note: required because it's used within this closure
 

@@ -42,20 +42,21 @@ pub fn string_display_width(s: &str) -> usize {
     s.graphemes(true).map(grapheme_width).sum()
 }
 
-/// Dedents a string by removing whitespace at the start and returns
-/// the result and display width of the removed segment.
+/// Dedents a string by removing whitespace at the start and returns the byte index of the start
+/// of the dedented section, the display width of the removed segment and the dedented slice,
+/// respectively.
 #[inline]
-pub fn dedent(s: &str) -> (usize, &str) {
+pub fn dedent(s: &str) -> (usize, usize, &str) {
     let mut width = 0;
     for (index, grapheme) in s.grapheme_indices(true) {
         match grapheme {
             " " => width += 1,
             TAB => width += 4,
-            _ => return (width, &s[index..]),
+            _ => return (index, width, &s[index..]),
         }
     }
 
-    (string_display_width(s), &s[s.len()..])
+    (s.len(), string_display_width(s), &s[s.len()..])
 }
 
 #[cfg(test)]
@@ -64,15 +65,15 @@ mod test {
 
     #[test]
     pub fn test_dedent() {
-        assert_eq!(dedent("  dedent this"), (2, "dedent this"));
-        assert_eq!(dedent("\tdedent this"), (4, "dedent this"));
-        assert_eq!(dedent("\t dedent this"), (5, "dedent this"));
+        assert_eq!(dedent("  dedent this"), (2, 2, "dedent this"));
+        assert_eq!(dedent("\tdedent this"), (1, 4, "dedent this"));
+        assert_eq!(dedent("\t dedent this"), (2, 5, "dedent this"));
         assert_eq!(
             dedent(" \t   \t \t dedent this"),
-            (1 + 4 + 3 + 4 + 1 + 4 + 1, "dedent this")
+            (9, 1 + 4 + 3 + 4 + 1 + 4 + 1, "dedent this")
         );
-        assert_eq!(dedent(""), (0, ""));
-        assert_eq!(dedent(" "), (1, ""));
-        assert_eq!(dedent(" \t"), (5, ""));
+        assert_eq!(dedent(""), (0, 0, ""));
+        assert_eq!(dedent(" "), (1, 1, ""));
+        assert_eq!(dedent(" \t"), (2, 5, ""));
     }
 }

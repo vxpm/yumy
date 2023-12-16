@@ -66,16 +66,40 @@ where
     }
 }
 
+/// A line of a text source.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct SourceLine<'src> {
-    pub index: usize,
-    pub span: SourceSpan,
-    pub text: &'src str,
+    index: usize,
+    indent_size: usize,
+    full_span: SourceSpan,
+    dedented_span: SourceSpan,
+    text: &'src str,
 }
 
 impl<'src> SourceLine<'src> {
-    pub fn new(index: usize, span: SourceSpan, text: &'src str) -> Self {
-        Self { index, span, text }
+    /// The index of this line in the source.
+    pub fn index(&self) -> usize {
+        self.index
+    }
+
+    /// The size of the indentation in this line.
+    pub fn indent_size(&self) -> usize {
+        self.indent_size
+    }
+
+    /// The span of the whole line in the source, i.e. including indentation.
+    pub fn full_span(&self) -> SourceSpan {
+        self.full_span
+    }
+
+    /// The span of the dedented line in the source, i.e. excluding indentation.
+    pub fn dedented_span(&self) -> SourceSpan {
+        self.dedented_span
+    }
+
+    /// The dedented text of this line.
+    pub fn text(&self) -> &'src str {
+        self.text
     }
 }
 
@@ -97,11 +121,14 @@ impl<'src> Source<'src> {
                 .checked_sub(base_addr as usize)
                 .expect("line should always have higher address");
             let end = offset + line.len();
+            let (dedented_offset, indent_size, dedented) = crate::text::dedent(line);
 
             SourceLine {
                 index,
-                span: SourceSpan::new(offset as u32, end as u32),
-                text: line,
+                indent_size,
+                full_span: SourceSpan::new(offset as u32, end as u32),
+                dedented_span: SourceSpan::new((offset + dedented_offset) as u32, end as u32),
+                text: dedented,
             }
         });
 
@@ -154,7 +181,7 @@ impl<'src> Source<'src> {
         }
 
         self.lines
-            .partition_point(|line| line.span.start() as usize <= index)
+            .partition_point(|line| line.full_span.start() as usize <= index)
             .checked_sub(1)
             .map(|x| x)
     }
@@ -182,8 +209,10 @@ mod test {
         assert_eq!(
             Some(&SourceLine {
                 index: 0,
-                span: SourceSpan::new(0, 20),
-                text: "hello there darling!"
+                indent_size: 0,
+                full_span: SourceSpan::new(0, 20),
+                dedented_span: SourceSpan::new(0, 20),
+                text: "hello there darling!",
             }),
             lines.next()
         );
@@ -194,7 +223,9 @@ mod test {
         assert_eq!(
             Some(&SourceLine {
                 index: 1,
-                span: SourceSpan::new(21, 28),
+                indent_size: 0,
+                full_span: SourceSpan::new(21, 28),
+                dedented_span: SourceSpan::new(21, 28),
                 text: "this is"
             }),
             lines.next()
@@ -205,7 +236,9 @@ mod test {
         assert_eq!(
             Some(&SourceLine {
                 index: 2,
-                span: SourceSpan::new(29, 29),
+                indent_size: 0,
+                full_span: SourceSpan::new(29, 29),
+                dedented_span: SourceSpan::new(29, 29),
                 text: ""
             }),
             lines.next()
@@ -217,7 +250,9 @@ mod test {
         assert_eq!(
             Some(&SourceLine {
                 index: 3,
-                span: SourceSpan::new(30, 46),
+                indent_size: 0,
+                full_span: SourceSpan::new(30, 46),
+                dedented_span: SourceSpan::new(30, 46),
                 text: "a sample text :)"
             }),
             lines.next()

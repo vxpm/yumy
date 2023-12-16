@@ -1,17 +1,22 @@
 ---
 source: src/diagnostic/body.rs
-expression: preprocessor.build()
+expression: builder.build()
 ---
-BodyDescriptor(
-    [
+BodyDescriptor {
+    events: [
         EmitLine(
             SourceLine {
                 index: 12,
-                span: SourceSpan {
+                indent_size: 8,
+                full_span: SourceSpan {
                     start: 226,
                     end: 270,
                 },
-                text: "        let handle = thread::spawn(move || {",
+                dedented_span: SourceSpan {
+                    start: 234,
+                    end: 270,
+                },
+                text: "let handle = thread::spawn(move || {",
             },
         ),
         EmitSinglelineLabel(
@@ -38,17 +43,27 @@ BodyDescriptor(
         EmitLine(
             SourceLine {
                 index: 13,
-                span: SourceSpan {
+                indent_size: 12,
+                full_span: SourceSpan {
                     start: 271,
                     end: 321,
                 },
-                text: "            let mut num = counter.lock().unwrap();",
+                dedented_span: SourceSpan {
+                    start: 283,
+                    end: 321,
+                },
+                text: "let mut num = counter.lock().unwrap();",
             },
         ),
         EmitLine(
             SourceLine {
                 index: 14,
-                span: SourceSpan {
+                indent_size: 0,
+                full_span: SourceSpan {
+                    start: 322,
+                    end: 322,
+                },
+                dedented_span: SourceSpan {
                     start: 322,
                     end: 322,
                 },
@@ -58,25 +73,36 @@ BodyDescriptor(
         EmitLine(
             SourceLine {
                 index: 15,
-                span: SourceSpan {
+                indent_size: 12,
+                full_span: SourceSpan {
                     start: 323,
                     end: 345,
                 },
-                text: "            *num += 1;",
+                dedented_span: SourceSpan {
+                    start: 335,
+                    end: 345,
+                },
+                text: "*num += 1;",
             },
         ),
         EmitLine(
             SourceLine {
                 index: 16,
-                span: SourceSpan {
+                indent_size: 8,
+                full_span: SourceSpan {
                     start: 346,
                     end: 357,
                 },
-                text: "        });",
+                dedented_span: SourceSpan {
+                    start: 354,
+                    end: 357,
+                },
+                text: "});",
             },
         ),
         EndMultilineLabel(
             0,
         ),
     ],
-)
+    indent_trim: 8,
+}

@@ -378,7 +378,7 @@ expression: ansi
         ),
     },
     AnsiBlock {
-        text: "         let handle = thread::spawn(move || {\n",
+        text: " let handle = thread::spawn(move || {\n",
         state: Style(
             AnsiState {
                 fg_color: None,
@@ -526,7 +526,7 @@ expression: ansi
         ),
     },
     AnsiBlock {
-        text: "             let mut num = counter.lock().unwrap();\n",
+        text: "     let mut num = counter.lock().unwrap();\n",
         state: Style(
             AnsiState {
                 fg_color: None,
@@ -822,7 +822,7 @@ expression: ansi
         ),
     },
     AnsiBlock {
-        text: "             *num += 1;\n",
+        text: "     *num += 1;\n",
         state: Style(
             AnsiState {
                 fg_color: None,
@@ -970,7 +970,7 @@ expression: ansi
         ),
     },
     AnsiBlock {
-        text: "         });\n   ",
+        text: " });\n   ",
         state: Style(
             AnsiState {
                 fg_color: None,
