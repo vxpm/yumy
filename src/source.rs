@@ -168,7 +168,7 @@ impl<'src> Source<'src> {
     }
 
     pub fn line(&self, index: usize) -> Option<SourceLine<'src>> {
-        self.lines.get(index as usize).copied()
+        self.lines.get(index).copied()
     }
 
     pub fn lines(&self) -> impl Iterator<Item = &SourceLine> {
@@ -183,7 +183,6 @@ impl<'src> Source<'src> {
         self.lines
             .partition_point(|line| line.full_span.start() as usize <= index)
             .checked_sub(1)
-            .map(|x| x)
     }
 
     /// Returns the line range of a span in this source.
@@ -203,6 +202,7 @@ mod test {
 
     #[test]
     fn test_lines() {
+        // TODO: change sample to contain some indentation
         let src = Source::new(SAMPLE, None);
         let mut lines = src.lines();
 

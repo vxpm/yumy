@@ -58,7 +58,7 @@ impl<'src> BodyBuilder<'src> {
                 } else {
                     self.active_labels.push((self.multiline_id, label.span));
                     self.result.push(BodyEvent::StartMultilineLabel {
-                        label: label,
+                        label,
                         id: self.multiline_id,
                     });
                     self.multiline_id += 1;
@@ -166,7 +166,7 @@ impl<'src> BodyDescriptor<'src> {
                     None
                 }
             })
-            .map(|line_index| f32::log10(line_index as f32).floor() as usize)
+            .map(|line_index| line_index.ilog10() as usize + 1)
             .unwrap_or(0)
     }
 }
@@ -250,7 +250,8 @@ where
                     writeln!(self.writer, "{:current_indent_level$}{}", "", line.text())?;
                 }
                 BodyEvent::EmitSinglelineLabel(label) => {
-                    // todo
+                    self.emit_left_column(None)?;
+                    writeln!(self.writer, "")?;
                 }
                 BodyEvent::StartMultilineLabel { label, id } => (),
                 BodyEvent::EndMultilineLabel(_) => (),
