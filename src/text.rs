@@ -38,7 +38,7 @@ pub fn grapheme_width(grapheme: &str) -> usize {
 
 /// Returns the display width of a string.
 #[inline]
-pub fn string_display_width(s: &str) -> usize {
+pub fn dislay_width(s: &str) -> usize {
     s.graphemes(true).map(grapheme_width).sum()
 }
 
@@ -56,7 +56,7 @@ pub fn dedent(s: &str) -> (usize, usize, &str) {
         }
     }
 
-    (s.len(), string_display_width(s), &s[s.len()..])
+    (s.len(), dislay_width(s), &s[s.len()..])
 }
 
 #[cfg(test)]

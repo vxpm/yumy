@@ -5,6 +5,7 @@ expression: clean
 error[E0277]: `Rc<Mutex<i32>>` cannot be sent between threads safely
    @ [src/main.rs]
 14 │ let handle = thread::spawn(move || {
+   :              ^^^^^^^^^^^^^ required by a bound introduced by this call
 15 │     let mut num = counter.lock().unwrap();
 16 │ 
 17 │     *num += 1;

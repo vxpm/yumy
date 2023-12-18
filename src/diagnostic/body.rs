@@ -226,15 +226,17 @@ where
 
     pub(crate) fn write(mut self) -> std::io::Result<()> {
         let events = std::mem::take(&mut self.descriptor.events);
-        let mut current_indent_level;
-        let mut current_line_width;
+
+        let mut current_line = None;
+        let mut current_indent_level = 0;
+
         for event in events {
             match event {
                 BodyEvent::EmitLine(line) => {
-                    // write the left column
-                    self.emit_left_column(Some(line.index() + 1))?;
+                    current_line = Some(line);
+                    let current_line = current_line.as_ref().unwrap();
+                    self.emit_left_column(Some(current_line.index() + 1))?;
 
-                    // calculate new indentation level
                     // remember the special case: if the line is empty, don't
                     // attempt to trim it
                     current_indent_level = if line.text().is_empty() {
@@ -243,15 +245,41 @@ where
                         line.indent_size() - self.descriptor.indent_trim
                     };
 
-                    // calculate new line width
-                    current_line_width = crate::text::string_display_width(line.text());
-
                     // finally, write the line
                     writeln!(self.writer, "{:current_indent_level$}{}", "", line.text())?;
                 }
                 BodyEvent::EmitSinglelineLabel(label) => {
+                    let current_line = current_line.as_ref().unwrap();
                     self.emit_left_column(None)?;
-                    writeln!(self.writer, "")?;
+
+                    // calculate ranges into the line text
+                    let local_base = current_line.dedented_span().start();
+                    let before_underline_range = 0usize..(label.span.start() - local_base) as usize;
+                    let underline_range =
+                        before_underline_range.end..(label.span.end() - local_base) as usize;
+
+                    // compute widths
+                    let before_underline_width =
+                        crate::text::dislay_width(&current_line.text()[before_underline_range]);
+                    let underline_width =
+                        crate::text::dislay_width(&current_line.text()[underline_range]);
+
+                    // write label
+                    let before_underline = std::iter::repeat(' ').take(before_underline_width);
+                    let underline =
+                        std::iter::repeat(self.config.charset.underliner).take(underline_width);
+                    let before_label: String = before_underline.chain(underline).collect();
+                    let before_label_style = label
+                        .indicator_style
+                        .unwrap_or(self.config.styles.singleline_indicator);
+
+                    writeln!(
+                        self.writer,
+                        "{:current_indent_level$}{} {}",
+                        "",
+                        before_label.style(before_label_style),
+                        label.message,
+                    )?;
                 }
                 BodyEvent::StartMultilineLabel { label, id } => (),
                 BodyEvent::EndMultilineLabel(_) => (),
