@@ -3,9 +3,9 @@ source: src/diagnostic/body.rs
 expression: builder.build()
 ---
 BodyDescriptor {
-    events: [
-        EmitLine(
-            SourceLine {
+    chunks: [
+        BodyChunk {
+            line: SourceLine {
                 index: 3,
                 indent_size: 0,
                 full_span: SourceSpan {
@@ -18,19 +18,21 @@ BodyDescriptor {
                 },
                 text: "pub enum List {",
             },
-        ),
-        EmitSinglelineLabel(
-            Label {
-                message: "",
-                span: SourceSpan {
-                    start: 53,
-                    end: 66,
+            singleline_labels: [
+                Label {
+                    message: "",
+                    span: SourceSpan {
+                        start: 53,
+                        end: 66,
+                    },
+                    indicator_style: None,
                 },
-                indicator_style: None,
-            },
-        ),
-        EmitLine(
-            SourceLine {
+            ],
+            starting_multiline_labels: [],
+            finishing_multiline_labels: [],
+        },
+        BodyChunk {
+            line: SourceLine {
                 index: 4,
                 indent_size: 4,
                 full_span: SourceSpan {
@@ -43,17 +45,19 @@ BodyDescriptor {
                 },
                 text: "Cons(i32, List),",
             },
-        ),
-        EmitSinglelineLabel(
-            Label {
-                message: "recursive without indirection",
-                span: SourceSpan {
-                    start: 83,
-                    end: 87,
+            singleline_labels: [
+                Label {
+                    message: "recursive without indirection",
+                    span: SourceSpan {
+                        start: 83,
+                        end: 87,
+                    },
+                    indicator_style: None,
                 },
-                indicator_style: None,
-            },
-        ),
+            ],
+            starting_multiline_labels: [],
+            finishing_multiline_labels: [],
+        },
     ],
     indent_trim: 0,
 }

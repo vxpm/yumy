@@ -6,12 +6,12 @@ use crate::{
 use owo_colors::OwoColorize;
 use std::io::Write;
 
-#[derive(Debug, Clone)]
-pub(crate) enum BodyEvent<'src> {
-    EmitLine(SourceLine<'src>),
-    EmitSinglelineLabel(Label),
-    StartMultilineLabel { label: Label, id: usize },
-    EndMultilineLabel(usize),
+#[derive(Debug)]
+pub(crate) struct BodyChunk<'src> {
+    line: SourceLine<'src>,
+    singleline_labels: Vec<Label>,
+    starting_multiline_labels: Vec<Label>,
+    finishing_multiline_labels: Vec<usize>,
 }
 
 /// Struct that takes care of generating the body of a diagnostic.
@@ -23,7 +23,7 @@ pub(crate) struct BodyBuilder<'src> {
     multiline_id: usize,
     current_line: usize,
     indent_trim: usize,
-    result: Vec<BodyEvent<'src>>,
+    result: Vec<BodyChunk<'src>>,
 }
 
 impl<'src> BodyBuilder<'src> {
@@ -41,7 +41,11 @@ impl<'src> BodyBuilder<'src> {
         }
     }
 
-    fn emit_labels_in_current(&mut self) {
+    /// Returns the singleline labels of the current line and the multiline labels starting in the
+    /// current line, respectively.
+    fn emit_labels_in_current(&mut self) -> (Vec<Label>, Vec<Label>) {
+        let mut singleline_labels = Vec::new();
+        let mut multiline_labels = Vec::new();
         loop {
             let Some(label) = self.labels.pop() else {
                 break;
@@ -54,23 +58,25 @@ impl<'src> BodyBuilder<'src> {
 
             if label_start_line == self.current_line {
                 if label.is_singleline(&self.source) {
-                    self.result.push(BodyEvent::EmitSinglelineLabel(label));
+                    singleline_labels.push(label);
                 } else {
                     self.active_labels.push((self.multiline_id, label.span));
-                    self.result.push(BodyEvent::StartMultilineLabel {
-                        label,
-                        id: self.multiline_id,
-                    });
+                    multiline_labels.push(label);
                     self.multiline_id += 1;
                 }
             } else {
+                // put the label back
                 self.labels.push(label);
                 break;
             }
         }
+
+        (singleline_labels, multiline_labels)
     }
 
-    fn finish_labels_in_current(&mut self) {
+    /// Returns the ID of multiline labels finishing in the current line
+    fn finish_labels_in_current(&mut self) -> Vec<usize> {
+        let mut finished_multiline_labels = Vec::new();
         self.active_labels.retain(|(label_id, span)| {
             let finished = self
                 .source
@@ -79,11 +85,13 @@ impl<'src> BodyBuilder<'src> {
                 == self.current_line;
 
             if finished {
-                self.result.push(BodyEvent::EndMultilineLabel(*label_id));
+                finished_multiline_labels.push(*label_id);
             }
 
             !finished
         });
+
+        finished_multiline_labels
     }
 
     fn emit_events(&mut self) {
@@ -115,16 +123,22 @@ impl<'src> BodyBuilder<'src> {
                 self.indent_trim = self.indent_trim.min(line.indent_size());
             }
 
-            self.result.push(BodyEvent::EmitLine(line));
-            self.emit_labels_in_current();
-            self.finish_labels_in_current();
+            let (singleline_labels, starting_multiline_labels) = self.emit_labels_in_current();
+            let finishing_multiline_labels = self.finish_labels_in_current();
+            let chunk = BodyChunk {
+                line,
+                singleline_labels,
+                starting_multiline_labels,
+                finishing_multiline_labels,
+            };
+            self.result.push(chunk);
         }
     }
 
     pub(crate) fn build(mut self) -> BodyDescriptor<'src> {
         self.emit_events();
         BodyDescriptor {
-            events: self.result,
+            chunks: self.result,
             indent_trim: self.indent_trim,
         }
     }
@@ -132,7 +146,7 @@ impl<'src> BodyBuilder<'src> {
 
 #[derive(Debug)]
 pub(crate) struct BodyDescriptor<'src> {
-    events: Vec<BodyEvent<'src>>,
+    chunks: Vec<BodyChunk<'src>>,
     indent_trim: usize,
 }
 
@@ -141,14 +155,13 @@ impl<'src> BodyDescriptor<'src> {
     fn maximum_parallel_labels(&self) -> usize {
         let mut count = 0;
         let mut max = 0;
-        for event in self.events.iter() {
-            match event {
-                BodyEvent::StartMultilineLabel { .. } => count += 1,
-                BodyEvent::EndMultilineLabel(_) => count -= 1,
-                _ => (),
-            }
-
+        for chunk in self.chunks.iter() {
+            count += chunk.starting_multiline_labels.len();
             max = max.max(count);
+
+            // NOTE: this is >after< we recalculate the maximum because labels that finish on a
+            // line are still shown on it!
+            count -= chunk.finishing_multiline_labels.len();
         }
 
         max
@@ -156,18 +169,28 @@ impl<'src> BodyDescriptor<'src> {
 
     /// Calculates the width of the line number section in the body.
     fn line_number_width(&self) -> usize {
-        self.events
-            .iter()
-            .rev()
-            .find_map(|event| {
-                if let BodyEvent::EmitLine(line) = event {
-                    Some(line.index() + 1)
-                } else {
-                    None
-                }
-            })
-            .map(|line_index| line_index.ilog10() as usize + 1)
+        self.chunks
+            .last()
+            .map(|chunk| (chunk.line.index() + 1).ilog10() as usize + 1)
             .unwrap_or(0)
+    }
+}
+
+#[derive(Debug, Clone, Default)]
+enum Slot {
+    RecentlyAdded(usize, Label),
+    Active(usize, Label),
+    #[default]
+    Inactive,
+}
+
+impl Slot {
+    pub fn is_active(&self) -> bool {
+        match self {
+            Slot::RecentlyAdded(_, _) => true,
+            Slot::Active(_, _) => true,
+            Slot::Inactive => false,
+        }
     }
 }
 
@@ -175,8 +198,10 @@ pub(crate) struct BodyWriter<'src, W> {
     writer: W,
     config: Config,
     descriptor: BodyDescriptor<'src>,
-    slots: Vec<Option<Label>>,
+    slots: Vec<Slot>,
+    multiline_id: usize,
     line_number_width: usize,
+    current_indent_level: usize,
 }
 
 impl<'src, W> BodyWriter<'src, W>
@@ -191,8 +216,10 @@ where
             writer,
             config,
             descriptor,
-            slots: vec![None; slots_needed],
+            slots: vec![Slot::Inactive; slots_needed],
+            multiline_id: 0,
             line_number_width,
+            current_indent_level: 0,
         }
     }
 
@@ -224,66 +251,93 @@ where
         Ok(())
     }
 
+    fn emit_source_line(&mut self, line: SourceLine) -> std::io::Result<()> {
+        self.emit_left_column(Some(line.index() + 1))?;
+
+        // remember the special case: if the line is empty, don't
+        // attempt to trim it
+        self.current_indent_level = if line.text().is_empty() {
+            0
+        } else {
+            line.indent_size() - self.descriptor.indent_trim
+        };
+
+        // finally, write the line
+        writeln!(
+            self.writer,
+            "{:l$}{}",
+            "",
+            line.text(),
+            l = self.current_indent_level,
+        )?;
+        Ok(())
+    }
+
+    fn emit_singleline_labels(
+        &mut self,
+        labels: Vec<Label>,
+        line: SourceLine,
+    ) -> std::io::Result<()> {
+        for label in labels {
+            self.emit_left_column(None)?;
+
+            // calculate ranges into the line text
+            let local_base = line.dedented_span().start();
+            let before_underline_range = 0usize..(label.span.start() - local_base) as usize;
+            let underline_range =
+                before_underline_range.end..(label.span.end() - local_base) as usize;
+
+            // compute widths
+            let before_underline_width =
+                crate::text::dislay_width(&line.text()[before_underline_range]);
+            let underline_width = crate::text::dislay_width(&line.text()[underline_range]);
+
+            // write label
+            let before_underline = std::iter::repeat(' ').take(before_underline_width);
+            let underline = std::iter::repeat(self.config.charset.underliner).take(underline_width);
+            let before_label: String = before_underline.chain(underline).collect();
+            let before_label_style = label
+                .indicator_style
+                .unwrap_or(self.config.styles.singleline_indicator);
+
+            writeln!(
+                self.writer,
+                "{:l$}{} {}",
+                "",
+                before_label.style(before_label_style),
+                label.message,
+                l = self.current_indent_level,
+            )?;
+        }
+
+        Ok(())
+    }
+
+    fn allocate_multiline(&mut self, label: Label) {
+        let slot = self
+            .slots
+            .iter_mut()
+            .find(|slot| !slot.is_active())
+            .expect("has enough slots");
+
+        *slot = Slot::RecentlyAdded(self.multiline_id, label);
+        self.multiline_id += 1;
+    }
+
+    fn start_multiline_labels(&mut self, labels: Vec<Label>) -> std::io::Result<()> {
+        for label in labels {
+            self.allocate_multiline(label);
+        }
+
+        Ok(())
+    }
+
     pub(crate) fn write(mut self) -> std::io::Result<()> {
-        let events = std::mem::take(&mut self.descriptor.events);
-
-        let mut current_line = None;
-        let mut current_indent_level = 0;
-
-        for event in events {
-            match event {
-                BodyEvent::EmitLine(line) => {
-                    current_line = Some(line);
-                    let current_line = current_line.as_ref().unwrap();
-                    self.emit_left_column(Some(current_line.index() + 1))?;
-
-                    // remember the special case: if the line is empty, don't
-                    // attempt to trim it
-                    current_indent_level = if line.text().is_empty() {
-                        0
-                    } else {
-                        line.indent_size() - self.descriptor.indent_trim
-                    };
-
-                    // finally, write the line
-                    writeln!(self.writer, "{:current_indent_level$}{}", "", line.text())?;
-                }
-                BodyEvent::EmitSinglelineLabel(label) => {
-                    let current_line = current_line.as_ref().unwrap();
-                    self.emit_left_column(None)?;
-
-                    // calculate ranges into the line text
-                    let local_base = current_line.dedented_span().start();
-                    let before_underline_range = 0usize..(label.span.start() - local_base) as usize;
-                    let underline_range =
-                        before_underline_range.end..(label.span.end() - local_base) as usize;
-
-                    // compute widths
-                    let before_underline_width =
-                        crate::text::dislay_width(&current_line.text()[before_underline_range]);
-                    let underline_width =
-                        crate::text::dislay_width(&current_line.text()[underline_range]);
-
-                    // write label
-                    let before_underline = std::iter::repeat(' ').take(before_underline_width);
-                    let underline =
-                        std::iter::repeat(self.config.charset.underliner).take(underline_width);
-                    let before_label: String = before_underline.chain(underline).collect();
-                    let before_label_style = label
-                        .indicator_style
-                        .unwrap_or(self.config.styles.singleline_indicator);
-
-                    writeln!(
-                        self.writer,
-                        "{:current_indent_level$}{} {}",
-                        "",
-                        before_label.style(before_label_style),
-                        label.message,
-                    )?;
-                }
-                BodyEvent::StartMultilineLabel { label, id } => (),
-                BodyEvent::EndMultilineLabel(_) => (),
-            }
+        let chunks = std::mem::take(&mut self.descriptor.chunks);
+        for chunk in chunks {
+            self.start_multiline_labels(chunk.starting_multiline_labels)?;
+            self.emit_source_line(chunk.line)?;
+            self.emit_singleline_labels(chunk.singleline_labels, chunk.line)?;
         }
         Ok(())
     }

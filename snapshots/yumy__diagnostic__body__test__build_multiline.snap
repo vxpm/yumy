@@ -3,9 +3,9 @@ source: src/diagnostic/body.rs
 expression: builder.build()
 ---
 BodyDescriptor {
-    events: [
-        EmitLine(
-            SourceLine {
+    chunks: [
+        BodyChunk {
+            line: SourceLine {
                 index: 12,
                 indent_size: 8,
                 full_span: SourceSpan {
@@ -18,30 +18,30 @@ BodyDescriptor {
                 },
                 text: "let handle = thread::spawn(move || {",
             },
-        ),
-        EmitSinglelineLabel(
-            Label {
-                message: "required by a bound introduced by this call",
-                span: SourceSpan {
-                    start: 247,
-                    end: 260,
+            singleline_labels: [
+                Label {
+                    message: "required by a bound introduced by this call",
+                    span: SourceSpan {
+                        start: 247,
+                        end: 260,
+                    },
+                    indicator_style: None,
                 },
-                indicator_style: None,
-            },
-        ),
-        StartMultilineLabel {
-            label: Label {
-                message: "`Rc<Mutex<i32>>` cannot be sent between threads safely",
-                span: SourceSpan {
-                    start: 261,
-                    end: 357,
+            ],
+            starting_multiline_labels: [
+                Label {
+                    message: "`Rc<Mutex<i32>>` cannot be sent between threads safely",
+                    span: SourceSpan {
+                        start: 261,
+                        end: 357,
+                    },
+                    indicator_style: None,
                 },
-                indicator_style: None,
-            },
-            id: 0,
+            ],
+            finishing_multiline_labels: [],
         },
-        EmitLine(
-            SourceLine {
+        BodyChunk {
+            line: SourceLine {
                 index: 13,
                 indent_size: 12,
                 full_span: SourceSpan {
@@ -54,9 +54,12 @@ BodyDescriptor {
                 },
                 text: "let mut num = counter.lock().unwrap();",
             },
-        ),
-        EmitLine(
-            SourceLine {
+            singleline_labels: [],
+            starting_multiline_labels: [],
+            finishing_multiline_labels: [],
+        },
+        BodyChunk {
+            line: SourceLine {
                 index: 14,
                 indent_size: 0,
                 full_span: SourceSpan {
@@ -69,9 +72,12 @@ BodyDescriptor {
                 },
                 text: "",
             },
-        ),
-        EmitLine(
-            SourceLine {
+            singleline_labels: [],
+            starting_multiline_labels: [],
+            finishing_multiline_labels: [],
+        },
+        BodyChunk {
+            line: SourceLine {
                 index: 15,
                 indent_size: 12,
                 full_span: SourceSpan {
@@ -84,9 +90,12 @@ BodyDescriptor {
                 },
                 text: "*num += 1;",
             },
-        ),
-        EmitLine(
-            SourceLine {
+            singleline_labels: [],
+            starting_multiline_labels: [],
+            finishing_multiline_labels: [],
+        },
+        BodyChunk {
+            line: SourceLine {
                 index: 16,
                 indent_size: 8,
                 full_span: SourceSpan {
@@ -99,10 +108,12 @@ BodyDescriptor {
                 },
                 text: "});",
             },
-        ),
-        EndMultilineLabel(
-            0,
-        ),
+            singleline_labels: [],
+            starting_multiline_labels: [],
+            finishing_multiline_labels: [
+                0,
+            ],
+        },
     ],
     indent_trim: 8,
 }
