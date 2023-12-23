@@ -1,0 +1,131 @@
+---
+source: src/diagnostic/body.rs
+expression: builder.build()
+---
+BodyDescriptor {
+    chunks: [
+        BodyChunk {
+            line: SourceLine {
+                index: 0,
+                indent_size: 0,
+                full_span: SourceSpan {
+                    start: 0,
+                    end: 7,
+                },
+                dedented_span: SourceSpan {
+                    start: 0,
+                    end: 7,
+                },
+                text: "aaaaaaa",
+            },
+            singleline_labels: [],
+            starting_multiline_labels: [
+                Label {
+                    message: "just testing two multilines",
+                    span: SourceSpan {
+                        start: 0,
+                        end: 36,
+                    },
+                    indicator_style: None,
+                },
+            ],
+            finishing_multiline_labels: [],
+        },
+        BodyChunk {
+            line: SourceLine {
+                index: 1,
+                indent_size: 0,
+                full_span: SourceSpan {
+                    start: 8,
+                    end: 22,
+                },
+                dedented_span: SourceSpan {
+                    start: 8,
+                    end: 22,
+                },
+                text: "bbbbbbbbbbbbbb",
+            },
+            singleline_labels: [],
+            starting_multiline_labels: [
+                Label {
+                    message: "hi",
+                    span: SourceSpan {
+                        start: 10,
+                        end: 24,
+                    },
+                    indicator_style: None,
+                },
+            ],
+            finishing_multiline_labels: [],
+        },
+        BodyChunk {
+            line: SourceLine {
+                index: 2,
+                indent_size: 0,
+                full_span: SourceSpan {
+                    start: 23,
+                    end: 26,
+                },
+                dedented_span: SourceSpan {
+                    start: 23,
+                    end: 26,
+                },
+                text: "ccc",
+            },
+            singleline_labels: [],
+            starting_multiline_labels: [],
+            finishing_multiline_labels: [
+                1,
+            ],
+        },
+        BodyChunk {
+            line: SourceLine {
+                index: 3,
+                indent_size: 0,
+                full_span: SourceSpan {
+                    start: 27,
+                    end: 33,
+                },
+                dedented_span: SourceSpan {
+                    start: 27,
+                    end: 33,
+                },
+                text: "dddddd",
+            },
+            singleline_labels: [],
+            starting_multiline_labels: [
+                Label {
+                    message: "hello",
+                    span: SourceSpan {
+                        start: 28,
+                        end: 35,
+                    },
+                    indicator_style: None,
+                },
+            ],
+            finishing_multiline_labels: [],
+        },
+        BodyChunk {
+            line: SourceLine {
+                index: 4,
+                indent_size: 0,
+                full_span: SourceSpan {
+                    start: 34,
+                    end: 44,
+                },
+                dedented_span: SourceSpan {
+                    start: 34,
+                    end: 44,
+                },
+                text: "eeeeeeeeee",
+            },
+            singleline_labels: [],
+            starting_multiline_labels: [],
+            finishing_multiline_labels: [
+                0,
+                2,
+            ],
+        },
+    ],
+    indent_trim: 0,
+}

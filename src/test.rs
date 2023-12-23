@@ -3,8 +3,10 @@ use std::{
     sync::OnceLock,
 };
 
+pub(crate) const TEXT_SAMPLE_1: &str = include_str!("../samples/sample1.txt");
 pub(crate) const RUST_SAMPLE_1: &str = include_str!("../samples/sample2.rs");
 pub(crate) const RUST_SAMPLE_2: &str = include_str!("../samples/sample3.rs");
+pub(crate) const TEXT_SAMPLE_2: &str = include_str!("../samples/sample4.txt");
 
 #[inline(always)]
 pub(crate) fn snapshots_path() -> &'static Path {

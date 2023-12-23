@@ -361,7 +361,7 @@ mod test {
     }
 
     #[test]
-    fn test_multiline() {
+    fn test_multiline_1() {
         let src = Source::new(crate::test::RUST_SAMPLE_2, Some("src/main.rs"));
         let diagnostic =
             Diagnostic::new("error[E0277]: `Rc<Mutex<i32>>` cannot be sent between threads safely")
@@ -375,6 +375,19 @@ mod test {
                 ))
                 .with_footnote("help: within `{closure@src/main.rs:11:36: 11:43}`, the trait `Send` is not implemented for `Rc<Mutex<i32>>`")
                 .with_footnote("note: required because it's used within this closure")
+                .with_source(src);
+
+        diagnostic_snapshot!(diagnostic);
+    }
+
+    #[test]
+    fn test_multiline_2() {
+        let src = Source::new(crate::test::TEXT_SAMPLE_2, Some("just testing"));
+        let diagnostic =
+            Diagnostic::new("error[E0277]: `Rc<Mutex<i32>>` cannot be sent between threads safely")
+                .with_label(Label::new(0..36u32, "just testing two multilines"))
+                .with_label(Label::new(10..24u32, "hi"))
+                .with_label(Label::new(28u32..35u32, "hello"))
                 .with_source(src);
 
         diagnostic_snapshot!(diagnostic);

@@ -251,15 +251,63 @@ where
         Ok(())
     }
 
-    fn emit_source_line(&mut self, line: SourceLine) -> std::io::Result<()> {
-        self.emit_left_column(Some(line.index() + 1))?;
+    fn emit_multiline_indicators(
+        &mut self,
+        finishing_multiline_labels: &[usize],
+    ) -> std::io::Result<()> {
+        for slot in self.slots.iter_mut() {
+            let (is_new, label_id, label) = match std::mem::take(slot) {
+                Slot::RecentlyAdded(label_id, label) => {
+                    *slot = Slot::Active(label_id, label);
+                    let Slot::Active(label_id, ref label) = slot else {
+                        unreachable!()
+                    };
+
+                    (true, *label_id, label)
+                }
+                Slot::Active(label_id, label) => {
+                    *slot = Slot::Active(label_id, label);
+                    let Slot::Active(label_id, ref label) = slot else {
+                        unreachable!()
+                    };
+
+                    (false, *label_id, label)
+                }
+                Slot::Inactive => {
+                    write!(self.writer, "  ")?;
+                    continue;
+                }
+            };
+
+            let style = label
+                .indicator_style
+                .unwrap_or(self.config.styles.multiline_indicator);
+
+            let indicator_char = if is_new {
+                self.config.charset.multiline_start
+            } else if finishing_multiline_labels.contains(&label_id) {
+                self.config.charset.multiline_end
+            } else {
+                self.config.charset.vertical_bar
+            };
+
+            write!(self.writer, "{} ", indicator_char.style(style))?;
+        }
+
+        // write!(self.writer, " ",)?;
+        Ok(())
+    }
+
+    fn emit_source_line(&mut self, chunk: &BodyChunk) -> std::io::Result<()> {
+        self.emit_left_column(Some(chunk.line.index() + 1))?;
+        self.emit_multiline_indicators(&chunk.finishing_multiline_labels)?;
 
         // remember the special case: if the line is empty, don't
         // attempt to trim it
-        self.current_indent_level = if line.text().is_empty() {
+        self.current_indent_level = if chunk.line.text().is_empty() {
             0
         } else {
-            line.indent_size() - self.descriptor.indent_trim
+            chunk.line.indent_size() - self.descriptor.indent_trim
         };
 
         // finally, write the line
@@ -267,19 +315,18 @@ where
             self.writer,
             "{:l$}{}",
             "",
-            line.text(),
+            chunk.line.text(),
             l = self.current_indent_level,
         )?;
         Ok(())
     }
 
-    fn emit_singleline_labels(
-        &mut self,
-        labels: Vec<Label>,
-        line: SourceLine,
-    ) -> std::io::Result<()> {
+    fn emit_singleline_labels(&mut self, chunk: &mut BodyChunk) -> std::io::Result<()> {
+        let line = chunk.line;
+        let labels = std::mem::take(&mut chunk.singleline_labels);
         for label in labels {
             self.emit_left_column(None)?;
+            self.emit_multiline_indicators(&chunk.finishing_multiline_labels)?;
 
             // calculate ranges into the line text
             let local_base = line.dedented_span().start();
@@ -324,7 +371,22 @@ where
         self.multiline_id += 1;
     }
 
-    fn start_multiline_labels(&mut self, labels: Vec<Label>) -> std::io::Result<()> {
+    fn deallocate_multiline(&mut self, label_id: usize) {
+        let slot = self
+            .slots
+            .iter_mut()
+            .find(|slot| match slot {
+                Slot::RecentlyAdded(id, _) => *id == label_id,
+                Slot::Active(id, _) => *id == label_id,
+                Slot::Inactive => false,
+            })
+            .expect("is active in a slot");
+
+        *slot = Slot::Inactive;
+    }
+
+    fn start_multiline_labels(&mut self, chunk: &mut BodyChunk) -> std::io::Result<()> {
+        let labels = std::mem::take(&mut chunk.starting_multiline_labels);
         for label in labels {
             self.allocate_multiline(label);
         }
@@ -332,12 +394,22 @@ where
         Ok(())
     }
 
+    fn finish_multiline_labels(&mut self, chunk: &mut BodyChunk) -> std::io::Result<()> {
+        let labels = std::mem::take(&mut chunk.finishing_multiline_labels);
+        for label_id in labels {
+            self.deallocate_multiline(label_id);
+        }
+
+        Ok(())
+    }
+
     pub(crate) fn write(mut self) -> std::io::Result<()> {
         let chunks = std::mem::take(&mut self.descriptor.chunks);
-        for chunk in chunks {
-            self.start_multiline_labels(chunk.starting_multiline_labels)?;
-            self.emit_source_line(chunk.line)?;
-            self.emit_singleline_labels(chunk.singleline_labels, chunk.line)?;
+        for mut chunk in chunks {
+            self.start_multiline_labels(&mut chunk)?;
+            self.emit_source_line(&chunk)?;
+            self.emit_singleline_labels(&mut chunk)?;
+            self.finish_multiline_labels(&mut chunk)?;
         }
         Ok(())
     }
@@ -363,7 +435,7 @@ mod test {
     }
 
     #[test]
-    fn test_build_multiline() {
+    fn test_build_multiline_1() {
         let src = Source::new(crate::test::RUST_SAMPLE_2, Some("src/main.rs"));
         let labels = vec![
             Label::new(247..260u32, "required by a bound introduced by this call"),
@@ -371,6 +443,21 @@ mod test {
                 261..357u32,
                 "`Rc<Mutex<i32>>` cannot be sent between threads safely",
             ),
+        ];
+
+        let builder = BodyBuilder::new(src, labels);
+
+        crate::test::setup_insta!();
+        insta::assert_debug_snapshot!(builder.build());
+    }
+
+    #[test]
+    fn test_build_multiline_2() {
+        let src = Source::new(crate::test::TEXT_SAMPLE_2, Some("just testing"));
+        let labels = vec![
+            Label::new(0..36u32, "just testing two multilines"),
+            Label::new(10..24u32, "hi"),
+            Label::new(28u32..35u32, "hello"),
         ];
 
         let builder = BodyBuilder::new(src, labels);

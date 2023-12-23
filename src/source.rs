@@ -198,12 +198,10 @@ impl<'src> Source<'src> {
 mod test {
     use super::*;
 
-    const SAMPLE: &str = include_str!("../samples/sample1.txt");
-
     #[test]
     fn test_lines() {
         // TODO: change sample to contain some indentation
-        let src = Source::new(SAMPLE, None);
+        let src = Source::new(crate::test::TEXT_SAMPLE_1, None);
         let mut lines = src.lines();
 
         assert_eq!(
@@ -261,7 +259,7 @@ mod test {
 
     #[test]
     pub fn test_line_range() {
-        let src = Source::new(SAMPLE, None);
+        let src = Source::new(crate::test::TEXT_SAMPLE_1, None);
 
         assert_eq!(Some(1..2), src.line_range_of_span(SourceSpan::new(21, 28)));
         assert_eq!(Some(1..2), src.line_range_of_span(SourceSpan::new(21, 29)));

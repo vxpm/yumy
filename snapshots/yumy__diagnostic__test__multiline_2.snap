@@ -1,0 +1,13 @@
+---
+source: src/diagnostic.rs
+expression: clean
+---
+error[E0277]: `Rc<Mutex<i32>>` cannot be sent between threads safely
+  @ [just testing]
+2 │ ┬   aaaaaaa
+3 │ │ ┬ bbbbbbbbbbbbbb
+4 │ │ ┼ ccc
+5 │ │ ┬ dddddd
+6 │ ┼ ┼ eeeeeeeeee
+
+
