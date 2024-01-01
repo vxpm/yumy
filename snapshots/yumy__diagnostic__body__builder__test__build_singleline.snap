@@ -1,0 +1,65 @@
+---
+source: src/diagnostic/body/builder.rs
+expression: "BodyDescriptor::new(src, labels)"
+---
+BodyDescriptor {
+    chunks: [
+        BodyChunk {
+            line: SourceLine {
+                index: 3,
+                indent_size: 0,
+                full_span: SourceSpan {
+                    start: 53,
+                    end: 68,
+                },
+                dedented_span: SourceSpan {
+                    start: 53,
+                    end: 68,
+                },
+                text: "pub enum List {",
+            },
+            singleline_labels: [
+                Label {
+                    message: "",
+                    span: SourceSpan {
+                        start: 53,
+                        end: 66,
+                    },
+                    indicator_style: None,
+                },
+            ],
+            starting_multiline_labels: [],
+            finishing_multiline_labels: [],
+        },
+        BodyChunk {
+            line: SourceLine {
+                index: 4,
+                indent_size: 4,
+                full_span: SourceSpan {
+                    start: 69,
+                    end: 89,
+                },
+                dedented_span: SourceSpan {
+                    start: 73,
+                    end: 89,
+                },
+                text: "Cons(i32, List),",
+            },
+            singleline_labels: [
+                Label {
+                    message: "recursive without indirection",
+                    span: SourceSpan {
+                        start: 83,
+                        end: 87,
+                    },
+                    indicator_style: None,
+                },
+            ],
+            starting_multiline_labels: [],
+            finishing_multiline_labels: [],
+        },
+    ],
+    indent_trim: 0,
+    line_number_width: 1,
+    maximum_parallel_labels: 0,
+}

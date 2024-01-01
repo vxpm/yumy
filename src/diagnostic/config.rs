@@ -28,7 +28,7 @@ impl Default for Charset {
     fn default() -> Self {
         Self {
             vertical_bar: '│',
-            horizontal_bar: '╶',
+            horizontal_bar: '─',
             underliner: '^',
             separator: ':',
             connection_top_to_right: '╰',

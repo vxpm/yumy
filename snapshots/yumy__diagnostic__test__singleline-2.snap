@@ -265,7 +265,7 @@ expression: ansi
         ),
     },
     AnsiBlock {
-        text: "5",
+        text: "4",
         state: Style(
             AnsiState {
                 fg_color: Some(
@@ -561,7 +561,7 @@ expression: ansi
         ),
     },
     AnsiBlock {
-        text: "6",
+        text: "5",
         state: Style(
             AnsiState {
                 fg_color: Some(

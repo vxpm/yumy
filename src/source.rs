@@ -1,7 +1,6 @@
-use std::{ops::Range, sync::Arc};
-
 use nonmax::NonMaxU32;
 use owo_colors::Style;
+use std::{ops::Range, sync::Arc};
 
 /// Unit struct that represents the absence of
 /// a source in a diagnostic.
@@ -21,7 +20,7 @@ impl SourceSpan {
     pub fn new(start: u32, end: u32) -> Self {
         assert!(end >= start);
         Self {
-            start: NonMaxU32::new(start).expect("Start is non-max"),
+            start: NonMaxU32::new(start).expect("start is non-max"),
             end,
         }
     }

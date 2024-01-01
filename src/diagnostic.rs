@@ -3,9 +3,8 @@ mod body;
 /// Module for diagnostic configuration related items.
 pub mod config;
 
-use self::{body::BodyWriter, config::Config};
+use self::{body::BodyDescriptor, config::Config};
 use super::source::{NoSource, Source, SourceSpan};
-use body::BodyBuilder;
 use owo_colors::{OwoColorize, Style};
 use std::{
     io::{BufWriter, Write},
@@ -160,33 +159,23 @@ impl<Src> Diagnostic<Src> {
 }
 
 impl<'src> Diagnostic<Source<'src>> {
-    /// Calculates the left padding necessary for this diagnostic.
-    fn left_padding(&self) -> usize {
-        let mut padding = 0;
-        for label in &self.labels {
-            // find last line of label
-            let line_index = self
-                .source
-                .line_index_at(label.span.end().saturating_sub(1) as usize);
-            let index_algs = line_index
-                .map(|x| f32::log10(x as f32).floor() as usize)
-                .unwrap_or(0);
-            if index_algs > padding {
-                padding = index_algs;
-            }
-        }
-
-        padding + 1
-    }
-
-    fn write_header<W>(&self, writer: &mut W, config: &Config) -> std::io::Result<()>
+    /// Writes the header of this diagnostic. The header is composed of:
+    /// 01. The error message of the diagnostic (`self.message`).
+    /// 02. The name of the source of the error (`self.source`).
+    fn write_header<W>(
+        &self,
+        writer: &mut W,
+        config: &Config,
+        line_number_width: usize,
+    ) -> std::io::Result<()>
     where
         W: Write,
     {
+        // write the error message
         writeln!(writer, "{}", self.message)?;
 
-        let left_padding = self.left_padding();
-        write!(writer, "{:padding$}", "", padding = left_padding)?;
+        // write source
+        write!(writer, "{:padding$}", "", padding = line_number_width)?;
         writeln!(
             writer,
             " {} {}{}{}",
@@ -198,6 +187,7 @@ impl<'src> Diagnostic<Source<'src>> {
                 .style(config.styles.source_name),
             ']'.style(config.styles.left_column)
         )?;
+
         Ok(())
     }
 
@@ -220,16 +210,19 @@ impl<'src> Diagnostic<Source<'src>> {
         Ok(())
     }
 
-    fn write_body<W>(&self, writer: &mut W, config: &Config) -> std::io::Result<()>
+    /// Writes the body of this diagnostic. The body is composed of:
+    /// 01. The source line's for which this diagnostic's labels refer to.
+    /// 02. The labels themselves (`self.labels`).
+    fn write_body<W>(
+        &self,
+        writer: &mut W,
+        config: &Config,
+        body_descriptor: BodyDescriptor,
+    ) -> std::io::Result<()>
     where
         W: Write,
     {
-        let body_builder = BodyBuilder::new(self.source.clone(), self.labels.clone());
-        let body_descriptor = body_builder.build();
-        let body_writer = BodyWriter::new(writer, config.clone(), body_descriptor);
-        body_writer.write()?;
-
-        Ok(())
+        body_descriptor.write_to(writer, config)
     }
 
     fn write_body_compact<W>(&self, writer: &mut W, config: &Config) -> std::io::Result<()>
@@ -266,19 +259,23 @@ impl<'src> Diagnostic<Source<'src>> {
         Ok(())
     }
 
-    fn write_footnotes<W>(&self, writer: &mut W, config: &Config) -> std::io::Result<()>
+    /// Writes the footnotes of this diagnostic (`self.footnotes`).
+    fn write_footnotes<W>(
+        &self,
+        writer: &mut W,
+        config: &Config,
+        line_number_width: usize,
+    ) -> std::io::Result<()>
     where
         W: Write,
     {
-        let left_padding = self.left_padding();
-
-        for footnote in &self.footnotes {
+        for footnote in self.footnotes.iter() {
             write!(
                 writer,
                 "{:padding$} {} ",
                 "",
                 '>'.style(config.styles.footnote_indicator),
-                padding = left_padding
+                padding = line_number_width
             )?;
             writeln!(writer, "{}", footnote)?;
         }
@@ -303,9 +300,12 @@ impl<'src> Diagnostic<Source<'src>> {
     where
         W: Write,
     {
-        self.write_header(writer, config)?;
-        self.write_body(writer, config)?;
-        self.write_footnotes(writer, config)?;
+        let body_descriptor = body::BodyDescriptor::new(self.source.clone(), self.labels.clone());
+        let line_number_width = body_descriptor.line_number_width;
+
+        self.write_header(writer, config, line_number_width)?;
+        self.write_body(writer, config, body_descriptor)?;
+        self.write_footnotes(writer, config, line_number_width)?;
 
         writeln!(writer)?;
         Ok(())
@@ -387,9 +387,10 @@ mod test {
             Diagnostic::new("error[E0277]: `Rc<Mutex<i32>>` cannot be sent between threads safely")
                 .with_label(Label::new(0..36u32, "just testing two multilines"))
                 .with_label(Label::new(10..24u32, "hi"))
-                .with_label(Label::new(28u32..35u32, "hello"))
+                .with_label(Label::styled(28u32..35u32, "hello", Style::default().red()))
                 .with_source(src);
 
+        diagnostic.eprint(&Config::default()).unwrap();
         diagnostic_snapshot!(diagnostic);
     }
 }
