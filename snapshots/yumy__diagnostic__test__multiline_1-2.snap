@@ -457,7 +457,7 @@ expression: ansi
             AnsiState {
                 fg_color: Some(
                     Bit4(
-                        33,
+                        31,
                     ),
                 ),
                 bg_color: None,
@@ -679,7 +679,7 @@ expression: ansi
             AnsiState {
                 fg_color: Some(
                     Bit4(
-                        33,
+                        31,
                     ),
                 ),
                 bg_color: None,
@@ -1049,7 +1049,7 @@ expression: ansi
             AnsiState {
                 fg_color: Some(
                     Bit4(
-                        33,
+                        31,
                     ),
                 ),
                 bg_color: None,
@@ -1345,7 +1345,7 @@ expression: ansi
             AnsiState {
                 fg_color: Some(
                     Bit4(
-                        33,
+                        31,
                     ),
                 ),
                 bg_color: None,
@@ -1602,7 +1602,7 @@ expression: ansi
             AnsiState {
                 fg_color: Some(
                     Bit4(
-                        33,
+                        31,
                     ),
                 ),
                 bg_color: None,
@@ -1898,7 +1898,7 @@ expression: ansi
             AnsiState {
                 fg_color: Some(
                     Bit4(
-                        33,
+                        31,
                     ),
                 ),
                 bg_color: None,
@@ -2120,7 +2120,7 @@ expression: ansi
             AnsiState {
                 fg_color: Some(
                     Bit4(
-                        33,
+                        31,
                     ),
                 ),
                 bg_color: None,
@@ -2159,7 +2159,7 @@ expression: ansi
             AnsiState {
                 fg_color: Some(
                     Bit4(
-                        33,
+                        31,
                     ),
                 ),
                 bg_color: None,
@@ -2233,7 +2233,7 @@ expression: ansi
             AnsiState {
                 fg_color: Some(
                     Bit4(
-                        33,
+                        31,
                     ),
                 ),
                 bg_color: None,
@@ -2341,7 +2341,81 @@ expression: ansi
         ),
     },
     AnsiBlock {
-        text: " help: within `{closure@src/main.rs:11:36: 11:43}`, the trait `Send` is not implemented for `Rc<Mutex<i32>>`\n   ",
+        text: " ",
+        state: Style(
+            AnsiState {
+                fg_color: None,
+                bg_color: None,
+                undr_color: None,
+                bold: false,
+                faint: false,
+                italic: false,
+                underline: false,
+                double_underline: false,
+                slow_blink: false,
+                rapid_blink: false,
+                inverse: false,
+                hide: false,
+                crossedout: false,
+                reset: true,
+                framed: false,
+                encircled: false,
+                font: None,
+                fraktur: false,
+                proportional_spacing: false,
+                overlined: false,
+                igrm_underline: false,
+                igrm_double_underline: false,
+                igrm_overline: false,
+                igrm_double_overline: false,
+                igrm_stress_marking: false,
+                superscript: false,
+                subscript: false,
+                unknown: false,
+            },
+        ),
+    },
+    AnsiBlock {
+        text: "note: required because it's used within `{closure@src/main.rs:11:36: 11:43}`",
+        state: Style(
+            AnsiState {
+                fg_color: Some(
+                    Bit4(
+                        32,
+                    ),
+                ),
+                bg_color: None,
+                undr_color: None,
+                bold: false,
+                faint: false,
+                italic: false,
+                underline: false,
+                double_underline: false,
+                slow_blink: false,
+                rapid_blink: false,
+                inverse: false,
+                hide: false,
+                crossedout: false,
+                reset: true,
+                framed: false,
+                encircled: false,
+                font: None,
+                fraktur: false,
+                proportional_spacing: false,
+                overlined: false,
+                igrm_underline: false,
+                igrm_double_underline: false,
+                igrm_overline: false,
+                igrm_double_overline: false,
+                igrm_stress_marking: false,
+                superscript: false,
+                subscript: false,
+                unknown: false,
+            },
+        ),
+    },
+    AnsiBlock {
+        text: "\n   ",
         state: Style(
             AnsiState {
                 fg_color: None,
@@ -2415,7 +2489,81 @@ expression: ansi
         ),
     },
     AnsiBlock {
-        text: " note: required because it's used within this closure\n\n",
+        text: " ",
+        state: Style(
+            AnsiState {
+                fg_color: None,
+                bg_color: None,
+                undr_color: None,
+                bold: false,
+                faint: false,
+                italic: false,
+                underline: false,
+                double_underline: false,
+                slow_blink: false,
+                rapid_blink: false,
+                inverse: false,
+                hide: false,
+                crossedout: false,
+                reset: true,
+                framed: false,
+                encircled: false,
+                font: None,
+                fraktur: false,
+                proportional_spacing: false,
+                overlined: false,
+                igrm_underline: false,
+                igrm_double_underline: false,
+                igrm_overline: false,
+                igrm_double_overline: false,
+                igrm_stress_marking: false,
+                superscript: false,
+                subscript: false,
+                unknown: false,
+            },
+        ),
+    },
+    AnsiBlock {
+        text: "help: within `{closure@src/main.rs:11:36: 11:43}`, the trait `Send` is not implemented for `Rc<Mutex<i32>>`",
+        state: Style(
+            AnsiState {
+                fg_color: Some(
+                    Bit4(
+                        34,
+                    ),
+                ),
+                bg_color: None,
+                undr_color: None,
+                bold: false,
+                faint: false,
+                italic: false,
+                underline: false,
+                double_underline: false,
+                slow_blink: false,
+                rapid_blink: false,
+                inverse: false,
+                hide: false,
+                crossedout: false,
+                reset: true,
+                framed: false,
+                encircled: false,
+                font: None,
+                fraktur: false,
+                proportional_spacing: false,
+                overlined: false,
+                igrm_underline: false,
+                igrm_double_underline: false,
+                igrm_overline: false,
+                igrm_double_overline: false,
+                igrm_stress_marking: false,
+                superscript: false,
+                subscript: false,
+                unknown: false,
+            },
+        ),
+    },
+    AnsiBlock {
+        text: "\n\n",
         state: Style(
             AnsiState {
                 fg_color: None,

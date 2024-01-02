@@ -170,6 +170,8 @@ impl<'src> DescriptorBuilder<'src> {
 
 #[cfg(test)]
 mod test {
+    use owo_colors::Style;
+
     use super::*;
     use crate::{Label, Source};
 
@@ -189,10 +191,15 @@ mod test {
     fn test_build_multiline_1() {
         let src = Source::new(crate::test::RUST_SAMPLE_2, Some("src/main.rs"));
         let labels = vec![
-            Label::new(247..260u32, "required by a bound introduced by this call"),
-            Label::new(
+            Label::styled(
+                247..260u32,
+                "required by a bound introduced by this call",
+                Style::new().yellow(),
+            ),
+            Label::styled(
                 261..357u32,
                 "`Rc<Mutex<i32>>` cannot be sent between threads safely",
+                Style::new().red(),
             ),
         ];
 
