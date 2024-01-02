@@ -104,7 +104,12 @@ impl<'src> DescriptorBuilder<'src> {
                 self.current_line += 1;
             }
 
-            let line = self.source.line(self.current_line).expect("valid line");
+            let line = self
+                .source
+                .lines()
+                .get(self.current_line)
+                .copied()
+                .expect("valid line");
 
             // special case: if the line is empty, don't consider it for indent trimming
             if !line.text().is_empty() {

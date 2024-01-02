@@ -1,5 +1,4 @@
 use nonmax::NonMaxU32;
-use owo_colors::Style;
 use std::{ops::Range, sync::Arc};
 
 /// Unit struct that represents the absence of
@@ -102,14 +101,16 @@ impl<'src> SourceLine<'src> {
     }
 }
 
-/// A source of text to use with a diagnostic.
 #[derive(Debug, Clone)]
-pub struct Source<'src> {
+struct SourceInner<'src> {
     src: &'src str,
     name: Option<&'src str>,
-    style: Option<Style>,
-    lines: Arc<Vec<SourceLine<'src>>>,
+    lines: Vec<SourceLine<'src>>,
 }
+
+/// A source of text to use with a diagnostic. Cheaply clonable.
+#[derive(Debug, Clone)]
+pub struct Source<'src>(Arc<SourceInner<'src>>);
 
 impl<'src> Source<'src> {
     fn lines_of(src: &str) -> Vec<SourceLine> {
@@ -134,58 +135,41 @@ impl<'src> Source<'src> {
         lines.collect()
     }
 
-    /// Creates a new source.
+    /// Creates a new [`Source`].
     pub fn new(src: &'src str, name: Option<&'src str>) -> Self {
-        Self {
+        Self(Arc::new(SourceInner {
             src,
             name,
-            style: None,
-            lines: Arc::new(Self::lines_of(src)),
-        }
-    }
-
-    /// Creates a new source with the given style.
-    pub fn styled(src: &'src str, name: Option<&'src str>, style: Style) -> Self {
-        Self {
-            src,
-            name,
-            style: Some(style),
-            lines: Arc::new(Self::lines_of(src)),
-        }
+            lines: Self::lines_of(src),
+        }))
     }
 
     pub fn src(&self) -> &'src str {
-        self.src
+        self.0.src
     }
 
     pub fn name(&self) -> Option<&'src str> {
-        self.name
+        self.0.name
     }
 
-    pub fn style(&self) -> Option<Style> {
-        self.style
+    pub fn lines(&self) -> &[SourceLine<'src>] {
+        self.0.lines.as_slice()
     }
 
-    pub fn line(&self, index: usize) -> Option<SourceLine<'src>> {
-        self.lines.get(index).copied()
-    }
-
-    pub fn lines(&self) -> impl Iterator<Item = &SourceLine> {
-        self.lines.iter()
-    }
-
+    /// Returns the line index at a given byte index.
     pub(crate) fn line_index_at(&self, index: usize) -> Option<usize> {
-        if index > self.src.len() {
+        if index > self.0.src.len() {
             return None;
         }
 
-        self.lines
+        self.0
+            .lines
             .partition_point(|line| line.full_span.start() as usize <= index)
             .checked_sub(1)
     }
 
     /// Returns the line range of a span in this source.
-    pub fn line_range_of_span(&self, span: SourceSpan) -> Option<Range<usize>> {
+    pub(crate) fn line_range_of_span(&self, span: SourceSpan) -> Option<Range<usize>> {
         let start = self.line_index_at(span.start() as usize)?;
         let end = self.line_index_at(span.end().saturating_sub(1).max(span.start()) as usize)?;
 
@@ -201,7 +185,7 @@ mod test {
     fn test_lines() {
         // TODO: change sample to contain some indentation
         let src = Source::new(crate::test::TEXT_SAMPLE_1, None);
-        let mut lines = src.lines();
+        let mut lines = src.lines().iter();
 
         assert_eq!(
             Some(&SourceLine {

@@ -115,7 +115,7 @@ where
             self.writer,
             "{:l$}{}",
             "",
-            chunk.line.text(),
+            chunk.line.text().style(self.config.styles.source),
             l = self.current_indent_level,
         )?;
         Ok(())
@@ -143,7 +143,7 @@ where
             let before_underline = std::iter::repeat(' ').take(before_underline_width);
             let underline = std::iter::repeat(self.config.charset.underliner).take(underline_width);
             let before_label: String = before_underline.chain(underline).collect();
-            let before_label_style = label
+            let label_style = label
                 .indicator_style
                 .unwrap_or(self.config.styles.singleline_indicator);
 
@@ -151,8 +151,8 @@ where
                 self.writer,
                 "{:l$}{} {}",
                 "",
-                before_label.style(before_label_style),
-                label.message,
+                before_label.style(label_style),
+                label.message.style(label_style),
                 l = self.current_indent_level,
             )?;
         }

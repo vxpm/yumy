@@ -351,12 +351,14 @@ mod test {
     #[test]
     fn test_singleline() {
         let src = Source::new(crate::test::RUST_SAMPLE_1, Some("src/lib.rs"));
-        let diagnostic = Diagnostic::new("error[E0072]: recursive type `List` has infinite size")
-            .with_label(Label::new(53..66u32, ""))
-            .with_label(Label::new(83..87u32, "recursive without indirection"))
-            .with_footnote("error: could not compile `playground` (lib) due to previous error")
-            .with_source(src);
+        let diagnostic =
+            Diagnostic::new("error[E0072]: recursive type `List` has infinite size".red())
+                .with_label(Label::new(53..66u32, ""))
+                .with_label(Label::new(83..87u32, "recursive without indirection"))
+                .with_footnote("error: could not compile `playground` (lib) due to previous error")
+                .with_source(src);
 
+        diagnostic.eprint(&Config::default()).unwrap();
         diagnostic_snapshot!(diagnostic);
     }
 
@@ -364,7 +366,7 @@ mod test {
     fn test_multiline_1() {
         let src = Source::new(crate::test::RUST_SAMPLE_2, Some("src/main.rs"));
         let diagnostic =
-            Diagnostic::new("error[E0277]: `Rc<Mutex<i32>>` cannot be sent between threads safely")
+            Diagnostic::new("error[E0277]: `Rc<Mutex<i32>>` cannot be sent between threads safely".red())
                 .with_label(Label::new(
                     247..260u32,
                     "required by a bound introduced by this call",
@@ -377,18 +379,18 @@ mod test {
                 .with_footnote("note: required because it's used within this closure")
                 .with_source(src);
 
+        diagnostic.eprint(&Config::default()).unwrap();
         diagnostic_snapshot!(diagnostic);
     }
 
     #[test]
     fn test_multiline_2() {
         let src = Source::new(crate::test::TEXT_SAMPLE_2, Some("just testing"));
-        let diagnostic =
-            Diagnostic::new("error[E0277]: `Rc<Mutex<i32>>` cannot be sent between threads safely")
-                .with_label(Label::new(0..36u32, "just testing two multilines"))
-                .with_label(Label::new(10..24u32, "hi"))
-                .with_label(Label::styled(28u32..35u32, "hello", Style::default().red()))
-                .with_source(src);
+        let diagnostic = Diagnostic::new("note: this is a test".green())
+            .with_label(Label::new(0..36u32, "just testing two multilines"))
+            .with_label(Label::new(10..24u32, "hi"))
+            .with_label(Label::styled(28u32..35u32, "hello", Style::default().red()))
+            .with_source(src);
 
         diagnostic.eprint(&Config::default()).unwrap();
         diagnostic_snapshot!(diagnostic);

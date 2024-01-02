@@ -2,7 +2,7 @@
 source: src/diagnostic.rs
 expression: clean
 ---
-error[E0277]: `Rc<Mutex<i32>>` cannot be sent between threads safely
+note: this is a test
   @ [just testing]
 1 │ ┬   aaaaaaa
 2 │ │ ┬ bbbbbbbbbbbbbb
