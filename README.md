@@ -1,45 +1,30 @@
 # yumy
-a diagnostics rendering crate. yumy aims to:
-- be easy to use
-- be independent (i.e. to not require deep integration)
-- be customizable enough
+a diagnostics rendering crate. yumy aims to be easy to use, focusing on simplicity. 
 
 # example output
-the diagnostic below is lorem ipsum.
+the diagnostic below is just an example.
 
-![example diagnostic](https://iili.io/HiW4QDv.png)
+![example diagnostic](https://iili.io/J5uF4ol.png)
 
-here's the same diagnostic in compact mode:
-
-![example diagnostic in compact mode](https://iili.io/HiWPJEB.png)
-
-and here's the code for this diagnostic:
+here's the code for this diagnostic (it's a test in this crate!):
 
 ```rust, ignore
-let diagnostic = Diagnostic::new(format!("{}: you did something wrong", "error".red()))
-    .with_source(Source::new(&src, None))
-    .with_label(Label::styled(
-        SourceSpan::new(154, 580),
-        "this is wrong!".bright_red(),
-        Style::new().bright_red(),
-    ))
-    .with_label(Label::styled(
-        SourceSpan::new(337, 362),
-        "thats a little sus".bright_red(),
-        Style::new().bright_red(),
-    ))
-    .with_label(Label::new(
-        SourceSpan::new(421, 500),
-        "you almost got this part right though".yellow(),
-    ))
-    .with_footnote(Footnote::new(format!(
-        "{}: maybe try doing it differently",
-        "help".yellow()
-    )))
-    .with_footnote(Footnote::new(format!(
-        "{}: this message doesn't actually help you :)",
-        "note".bright_green()
-    )));
+let src = Source::new(crate::test::RUST_SAMPLE_2, Some("src/main.rs"));
+let diagnostic =
+    Diagnostic::new("error[E0277]: `Rc<Mutex<i32>>` cannot be sent between threads safely".red())
+        .with_label(Label::styled(
+            247..260u32,
+            "required by a bound introduced by this call",
+            Style::new().yellow()
+        ))
+        .with_label(Label::styled(
+            261..357u32,
+            "`Rc<Mutex<i32>>` cannot be sent between threads safely",
+            Style::new().red()
+        ))
+        .with_footnote("note: required because it's used within `{closure@src/main.rs:11:36: 11:43}`".green())
+        .with_footnote("help: within `{closure@src/main.rs:11:36: 11:43}`, the trait `Send` is not implemented for `Rc<Mutex<i32>>`".blue())
+        .with_source(src);
 
 diagnostic.eprint(&Config::default()).unwrap();
 ```
