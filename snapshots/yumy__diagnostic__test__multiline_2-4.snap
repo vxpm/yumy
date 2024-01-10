@@ -456,7 +456,7 @@ expression: ansi
         ),
     },
     AnsiBlock {
-        text: "0..5",
+        text: "1..6",
         state: Style(
             AnsiState {
                 fg_color: Some(
@@ -534,7 +534,46 @@ expression: ansi
         ),
     },
     AnsiBlock {
-        text: "just testing two multilines\n",
+        text: "just testing two multilines",
+        state: Style(
+            AnsiState {
+                fg_color: Some(
+                    Bit4(
+                        33,
+                    ),
+                ),
+                bg_color: None,
+                undr_color: None,
+                bold: false,
+                faint: false,
+                italic: false,
+                underline: false,
+                double_underline: false,
+                slow_blink: false,
+                rapid_blink: false,
+                inverse: false,
+                hide: false,
+                crossedout: false,
+                reset: true,
+                framed: false,
+                encircled: false,
+                font: None,
+                fraktur: false,
+                proportional_spacing: false,
+                overlined: false,
+                igrm_underline: false,
+                igrm_double_underline: false,
+                igrm_overline: false,
+                igrm_double_overline: false,
+                igrm_stress_marking: false,
+                superscript: false,
+                subscript: false,
+                unknown: false,
+            },
+        ),
+    },
+    AnsiBlock {
+        text: "\n",
         state: Style(
             AnsiState {
                 fg_color: None,
@@ -721,7 +760,7 @@ expression: ansi
         ),
     },
     AnsiBlock {
-        text: "1..3",
+        text: "2..4",
         state: Style(
             AnsiState {
                 fg_color: Some(
@@ -799,7 +838,46 @@ expression: ansi
         ),
     },
     AnsiBlock {
-        text: "hi\n",
+        text: "hi",
+        state: Style(
+            AnsiState {
+                fg_color: Some(
+                    Bit4(
+                        33,
+                    ),
+                ),
+                bg_color: None,
+                undr_color: None,
+                bold: false,
+                faint: false,
+                italic: false,
+                underline: false,
+                double_underline: false,
+                slow_blink: false,
+                rapid_blink: false,
+                inverse: false,
+                hide: false,
+                crossedout: false,
+                reset: true,
+                framed: false,
+                encircled: false,
+                font: None,
+                fraktur: false,
+                proportional_spacing: false,
+                overlined: false,
+                igrm_underline: false,
+                igrm_double_underline: false,
+                igrm_overline: false,
+                igrm_double_overline: false,
+                igrm_stress_marking: false,
+                superscript: false,
+                subscript: false,
+                unknown: false,
+            },
+        ),
+    },
+    AnsiBlock {
+        text: "\n",
         state: Style(
             AnsiState {
                 fg_color: None,
@@ -986,7 +1064,7 @@ expression: ansi
         ),
     },
     AnsiBlock {
-        text: "3..5",
+        text: "4..6",
         state: Style(
             AnsiState {
                 fg_color: Some(
@@ -1064,7 +1142,46 @@ expression: ansi
         ),
     },
     AnsiBlock {
-        text: "hello\n\n",
+        text: "hello",
+        state: Style(
+            AnsiState {
+                fg_color: Some(
+                    Bit4(
+                        31,
+                    ),
+                ),
+                bg_color: None,
+                undr_color: None,
+                bold: false,
+                faint: false,
+                italic: false,
+                underline: false,
+                double_underline: false,
+                slow_blink: false,
+                rapid_blink: false,
+                inverse: false,
+                hide: false,
+                crossedout: false,
+                reset: true,
+                framed: false,
+                encircled: false,
+                font: None,
+                fraktur: false,
+                proportional_spacing: false,
+                overlined: false,
+                igrm_underline: false,
+                igrm_double_underline: false,
+                igrm_overline: false,
+                igrm_double_overline: false,
+                igrm_stress_marking: false,
+                superscript: false,
+                subscript: false,
+                unknown: false,
+            },
+        ),
+    },
+    AnsiBlock {
+        text: "\n\n",
         state: Style(
             AnsiState {
                 fg_color: None,

@@ -230,17 +230,22 @@ impl<'src> Diagnostic<Source<'src>> {
         W: Write,
     {
         for label in &self.labels {
-            let range = label.line_range(&self.source);
-            if range.start + 1 == range.end {
+            let line_index_range = label.line_range(&self.source);
+            let line_number_range = line_index_range.start + 1..line_index_range.end + 1;
+            if line_number_range.start + 1 == line_number_range.end {
                 writeln!(
                     writer,
                     "{} {}{}{}{}{}",
                     config.charset.vertical_bar.style(config.styles.left_column),
                     '['.style(config.styles.left_column),
-                    "line ".style(config.styles.source),
-                    range.start.style(config.styles.source),
+                    "line  ".style(config.styles.source),
+                    line_number_range.start.style(config.styles.source),
                     "]: ".style(config.styles.left_column),
-                    label.message
+                    label.message.style(
+                        label
+                            .indicator_style
+                            .unwrap_or(config.styles.singleline_indicator)
+                    )
                 )?;
             } else {
                 writeln!(
@@ -249,9 +254,13 @@ impl<'src> Diagnostic<Source<'src>> {
                     config.charset.vertical_bar.style(config.styles.left_column),
                     '['.style(config.styles.left_column),
                     "lines ".style(config.styles.source),
-                    range.style(config.styles.source),
+                    line_number_range.style(config.styles.source),
                     "]: ".style(config.styles.left_column),
-                    label.message
+                    label.message.style(
+                        label
+                            .indicator_style
+                            .unwrap_or(config.styles.multiline_indicator)
+                    )
                 )?;
             }
         }
@@ -382,6 +391,7 @@ mod test {
                 .with_source(src);
 
         diagnostic.eprint(&Config::default()).unwrap();
+        diagnostic.eprint_compact(&Config::default()).unwrap();
         diagnostic_snapshot!(diagnostic);
     }
 
