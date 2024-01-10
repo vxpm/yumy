@@ -6,7 +6,11 @@ the diagnostic below is just an example.
 
 ![example diagnostic](https://iili.io/J5uF4ol.png)
 
-here's the code for this diagnostic (it's a test in this crate!):
+here's the same diagnostic printed in compact mode:
+
+![example diagnostic in compact mode](https://iili.io/J7LIskv.png)
+
+and here's the code for this diagnostic (it's a test in this crate!):
 
 ```rust, ignore
 let src = Source::new(crate::test::RUST_SAMPLE_2, Some("src/main.rs"));
@@ -27,4 +31,5 @@ let diagnostic =
         .with_source(src);
 
 diagnostic.eprint(&Config::default()).unwrap();
+diagnostic.eprint_compact(&Config::default()).unwrap();
 ```
