@@ -131,8 +131,8 @@ where
             // calculate ranges into the line text
             let local_base = line.dedented_span().start();
             let before_underline_range = 0usize..(label.span.start() - local_base) as usize;
-            let underline_range =
-                before_underline_range.end..(label.span.end() - local_base) as usize;
+            let underline_range = before_underline_range.end
+                ..(label.span.end().min(line.text().len() as u32) - local_base) as usize;
 
             // compute widths
             let before_underline_width =
