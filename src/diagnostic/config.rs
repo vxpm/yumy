@@ -54,7 +54,7 @@ impl Default for DefaultStyles {
     fn default() -> Self {
         Self {
             source_name: Style::new().white().bold(),
-            source: Style::new().white(),
+            source: Style::new().bright_white(),
             left_column: Style::new().bright_blue().bold(),
             multiline_indicator: Style::new().yellow(),
             singleline_indicator: Style::new().yellow(),
