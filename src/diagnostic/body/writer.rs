@@ -129,10 +129,11 @@ where
             self.emit_multiline_indicators(&chunk.finishing_multiline_labels)?;
 
             // calculate ranges into the line text
-            let local_base = line.dedented_span().start();
-            let before_underline_range = 0usize..(label.span.start() - local_base) as usize;
+            let before_underline_range =
+                0usize..(label.span.start() - line.dedented_span().start()) as usize;
             let underline_range = before_underline_range.end
-                ..(label.span.end().min(line.text().len() as u32) - local_base) as usize;
+                ..(label.span.end().min(line.dedented_span().end()) - line.dedented_span().start())
+                    as usize;
 
             // compute widths
             let before_underline_width =
