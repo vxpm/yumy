@@ -113,10 +113,10 @@ where
         // finally, write the line
         writeln!(
             self.writer,
-            "{:l$}{}",
+            "{:i$}{}",
             "",
             chunk.line.text().style(self.config.styles.source),
-            l = self.current_indent_level,
+            i = self.current_indent_level,
         )?;
         Ok(())
     }
@@ -128,17 +128,15 @@ where
             self.emit_left_column(None)?;
             self.emit_multiline_indicators(&chunk.finishing_multiline_labels)?;
 
-            // calculate ranges into the line text
-            let before_underline_range =
-                0usize..(label.span.start() - line.dedented_span().start()) as usize;
-            let underline_range = before_underline_range.end
-                ..(label.span.end().min(line.dedented_span().end()) - line.dedented_span().start())
-                    as usize;
+            let label_dedented_span = label.span.on_dedented_span(line.dedented_span());
+            let before_underline_range = 0usize..label_dedented_span.start() as usize;
+            let underline_range =
+                label_dedented_span.start() as usize..label_dedented_span.end() as usize;
 
             // compute widths
             let before_underline_width =
                 crate::text::dislay_width(&line.text()[before_underline_range]);
-            let underline_width = crate::text::dislay_width(&line.text()[underline_range]);
+            let underline_width = crate::text::dislay_width(&line.text()[underline_range]).max(1);
 
             // write label
             let before_underline = std::iter::repeat(' ').take(before_underline_width);

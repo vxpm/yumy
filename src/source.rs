@@ -53,6 +53,14 @@ impl SourceSpan {
     pub fn contains(&self, value: u32) -> bool {
         (self.start() <= value) && (value < self.end)
     }
+
+    #[inline]
+    pub(crate) fn on_dedented_span(&self, dedented_span: SourceSpan) -> SourceSpan {
+        Self::new(
+            self.start() - dedented_span.start(),
+            self.end().min(dedented_span.end()) - dedented_span.start(),
+        )
+    }
 }
 
 impl<T> From<Range<T>> for SourceSpan
