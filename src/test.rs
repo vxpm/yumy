@@ -37,39 +37,25 @@ macro_rules! diagnostic_snapshot {
         let mut buffer = Vec::new();
 
         $diagnostic
-            .write_to_compact(&mut buffer, &Config::default())
+            .write_to_compact(&mut strip_ansi_escapes::Writer::new(&mut buffer), &Config::default())
             .unwrap();
 
-        let string = String::from_utf8(buffer).unwrap();
-
-        // extract styles and clear it up
-        let (clean, ansi): (Vec<_>, Vec<_>) = ansi_str::get_blocks(&string)
-            .map(|block| (block.text().to_string(), block))
-            .unzip();
-        let clean = clean.join("");
+        let output = String::from_utf8(buffer).unwrap();
 
         crate::test::setup_insta!();
-        ::insta::assert_snapshot!(clean);
-        ::insta::assert_debug_snapshot!(ansi);
+        ::insta::assert_snapshot!(output);
     }};
     (@inner: $diagnostic:expr) => {{
         let mut buffer = Vec::new();
 
         $diagnostic
-            .write_to(&mut buffer, &Config::default())
+            .write_to(&mut strip_ansi_escapes::Writer::new(&mut buffer), &Config::default())
             .unwrap();
 
-        let string = String::from_utf8(buffer).unwrap();
-
-        // extract styles and clear it up
-        let (clean, ansi): (Vec<_>, Vec<_>) = ansi_str::get_blocks(&string)
-            .map(|block| (block.text().to_string(), block))
-            .unzip();
-        let clean = clean.join("");
+        let output = String::from_utf8(buffer).unwrap();
 
         crate::test::setup_insta!();
-        ::insta::assert_snapshot!(clean);
-        ::insta::assert_debug_snapshot!(ansi);
+        ::insta::assert_snapshot!(output);
     }};
     ($diagnostic:expr) => {
         diagnostic_snapshot!(@inner: $diagnostic);
